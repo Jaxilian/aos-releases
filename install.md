@@ -85,6 +85,8 @@ AOS**:
   Software -> Updates installs every application update and a new AOS in
   one step; a new AOS starts at the next restart, and the boot menu's "AOS
   (previous version)" goes back to the one before if anything is wrong.
+- **Screenshots**: Print (the display), Shift+Print (the window); they
+  are in Pictures/Screenshots.
 - **Glass or light**: Settings -> Display -> Appearance. Light is opaque
   and easiest on a slow GPU.
 

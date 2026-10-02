@@ -44,7 +44,9 @@ an issue on the project.
   GPU. Settings -> Display -> Appearance -> Light turns it off.
 - **A new theme reaches an application when it next starts**; the desktop
   itself follows within seconds.
-- **No screenshots, no drag and drop between applications** yet.
+- **No drag and drop between applications** yet. (Screenshots: Print for
+  the display, Shift+Print for the window, Super+Shift+S without a Print
+  key; they land in Pictures/Screenshots.)
 - **X11 programs** need XWayland, a third-party package (Settings ->
   Software, or the Third-party page in Software); Steam installs it.
 
