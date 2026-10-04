@@ -3,7 +3,7 @@
 What does not work yet, or works only partly, in the current alpha. Each
 entry says what to do about it today. A problem that is not here: Settings
 -> About -> Save Report, and send the file with a description to the
-address in [../../SECURITY.md](SECURITY.md) (security problems) or as
+address in [../../SECURITY.md](../../SECURITY.md) (security problems) or as
 an issue on the project.
 
 ## Installing
@@ -20,7 +20,8 @@ an issue on the project.
   system, no choosing partitions.
 - **No disk encryption.** `/home` on LUKS is planned; until then anyone
   with the disk can read it ([policies.md](policies.md)).
-- **The live session's account is `admin` / `123321`.** It exists only on
+- **The live session's account, `admin`, has no password**: sudo asks for
+  none, and there is no lock screen. It exists only on
   the installer; an installed machine has only the account you create.
 
 ## Hardware
@@ -47,8 +48,8 @@ an issue on the project.
 - **No drag and drop between applications** yet. (Screenshots: Print for
   the display, Shift+Print for the window, Super+Shift+S without a Print
   key; they land in Pictures/Screenshots.)
-- **X11 programs** need XWayland, a third-party package (Settings ->
-  Software, or the Third-party page in Software); Steam installs it.
+- **X11 programs** need XWayland, a third-party package (Software ->
+  AOS -> Compatibility); Steam installs it.
 
 ## Software
 
@@ -58,6 +59,11 @@ an issue on the project.
   update of either; they are marked wherever they appear.
 - **Firefox may show pages as boxes** on some machines (its sandbox and the
   fonts); fixed in testing, not yet confirmed on hardware.
+- **Firefox and Discord now live in a home of their own** (`~/.var/app/`,
+  see [security-model.md](security-model.md)); a profile or login made
+  by an earlier release stays in `~/.mozilla` or `~/.config/discord` and
+  is not carried over. Downloads is shared, so what they saved there is
+  where it was. A file dialog inside them shows their own home.
 
 ## Updates
 
@@ -65,8 +71,13 @@ an issue on the project.
   itself; reinstall it.
 - **An update replaces the system, not a part of it**: about 650 MB per
   release. Delta updates are not planned before 1.0.
+- **AOS's own applications show as installed in Software but do not
+  upgrade one by one**: they are part of the release image, and a new
+  version of one comes with the next system update.
 
 ## Security status
 
 The CVE report of each release and what was done about every entry:
-[security-status.md](security-status.md).
+[security-status.md](security-status.md). What AOS defends against and
+what it does not yet -- third-party programs are not sandboxed, the root
+is not verified, the disk is not encrypted: [security-model.md](security-model.md).

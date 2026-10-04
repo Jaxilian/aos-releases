@@ -3,6 +3,21 @@
 For someone installing AOS on a machine of their own, from a release.
 About twenty minutes, most of it the copy.
 
+## Will it run here?
+
+Before writing a stick, on the machine as it is now, under any Linux:
+
+```sh
+sh aos-check.sh
+```
+
+([br2ext/board/aos/aos-check.sh](../board/aos/aos-check.sh), nothing to
+install.) It prints a verdict per item -- the CPU level, firmware and
+Secure Boot, the GPU against the NVIDIA rule, which driver this Linux
+uses for the Wi-Fi, sound and Bluetooth -- and writes
+`~/aos-check-<host>-<date>.txt` to send with a bug report. A NO stops
+AOS; a CHECK is something to look at in [known-issues.md](known-issues.md).
+
 ## What you need
 
 - A 64-bit PC from about 2012 on (the CPU must support x86-64-v2; a Core
@@ -50,7 +65,9 @@ On Windows or macOS, any tool that writes a raw image works (Rufus in
    [known-issues.md](known-issues.md) -- some refuse an ISO written to a
    stick.
 
-The live desktop runs as a demo account, `admin`, password `123321`.
+The live desktop runs as `admin`, an account with no password: sudo asks
+for none there, and there is no lock screen, because whoever sits at a
+live stick owns the machine.
 Nothing on your disk is touched until you install.
 
 If the screen goes black after GRUB, restart and pick "AOS (live, safe
@@ -82,7 +99,7 @@ AOS**:
   Third-party once you switch that repository on (they are not part of
   AOS, and are marked).
 - **Updates**: AOS looks once a day and says so when there are some.
-  Software -> Updates installs every application update and a new AOS in
+  Software -> Update installs every application update and a new AOS in
   one step; a new AOS starts at the next restart, and the boot menu's "AOS
   (previous version)" goes back to the one before if anything is wrong.
 - **Screenshots**: Print (the display), Shift+Print (the window); they

@@ -7,6 +7,17 @@ NVD's feed). This page is its triage, redone when the report changes.
 
 **Triaged 2026-10-01 against the 0.1.7 report: 64 CVEs in 19 packages.**
 
+## Fixed by a version bump (in 0.1.18)
+
+- **linux** 7.1.13 → 7.2.9: CVE-2026-52972 (af_alg AEAD length). 7.1.y
+  ended at 7.1.13; 7.2.y is the stable series. The headers choice stays
+  at "7.1.x or later", so the toolchain was not rebuilt.
+
+## Fixed by a version bump (in 0.1.17)
+
+- **binutils** 2.45.1 → 2.46.1: the eight readelf/objdump/XCOFF entries.
+  The toolchain's binutils too, so this was a clean rebuild.
+
 ## Fixed by a version bump (in 0.1.8)
 
 | Package | From | To | CVEs | Why it mattered |
@@ -38,6 +49,9 @@ dropped.
 - **tar** CVE-2026-18477, 18508: incremental dumps and `--one-top-level`;
   `aos-update` uses neither, and extracts only signed tarballs.
 - **python-setuptools** CVE-2026-59890: a build tool, not on the image.
+- **systemd** CVE-2026-40223: an assertion behind a `Delegate=yes` unit
+  with no `User=`; no such unit is on the image, and apm installs no
+  system units with `Delegate=`. Ignored until the systemd bump.
 - **terminal** CVE-2011-0189: Apple's Terminal. Our applications now carry
   an explicit vendor in their CPE, so a name match cannot happen again.
 
@@ -45,18 +59,16 @@ dropped.
 
 | Package | CVEs | Exposure | Plan |
 |---|---|---|---|
-| linux 7.1.13 | CVE-2026-52972 (af_alg AEAD length) | local | the next 7.1.y point release, through the kernel package |
-| binutils 2.45.1 | 8 (readelf/objdump, an XCOFF linker overflow) | local, a developer reading a hostile binary | binutils is the toolchain's version too: 2.47 rebuilds the toolchain, planned with the next toolchain bump |
-| systemd 258.7 | CVE-2026-40223 (an assert, local) | needs a `Delegate=yes` unit with no `User=`; AOS ships none | systemd 260+ with the next Buildroot update |
 | grub2 2.14 | CVE-2025-61662 (gettext use-after-free) | needs the GRUB prompt, i.e. the keyboard at boot | the next GRUB release |
 | bison 3.8.2 | CVE-2026-56389, 56390 | a developer building a hostile grammar | no fixed release yet |
 
 ## How a fix reaches a machine
 
 A package fix is a new AOS release: a version bump here, a tag, and
-`release.sh --publish`. Every installed machine looks daily
-(`aos-update-check.timer`), the desktop shows a notice, and Software ->
-Updates (or `sudo apm upgrade`) writes the new release into the idle root
+`release.sh --publish`. Every installed machine looks two minutes
+after a boot and daily (`aos-update-check.timer`), the desktop shows a
+toast that opens Software -> Update, and Upgrade system there (or `sudo
+apm upgrade`) writes the new release into the idle root
 slot and boots it at the next restart, with the old one a menu entry away
 (docs/upgrading.md). Applications from apm update the same way, in the
 same step.
