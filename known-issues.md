@@ -90,10 +90,10 @@ an issue on the project.
   GPU. Settings -> Display -> Appearance -> Lightweight turns it off.
 - **A new theme reaches an application when it next starts**; the desktop
   itself follows within seconds.
-- **No switching users without logging out.** The pieces are in 0.4.39
-  (a second login screen on VT2, the shell's row, the lock), but the
-  VT2 greeter did not come up in testing (BUGS.md 11), so the row stays
-  hidden until it does. Log out, or a second person waits.
+- **Switch user** (the power menu, 0.4.40) locks the screen and opens a
+  second login on VT2; Ctrl+Alt+F1 and Ctrl+Alt+F2 move between the two.
+  Two people at once, not more: one login screen per VT. The second
+  session may come up behind its own lock screen; the password opens it.
 - **No drag and drop between applications** yet. (Screenshots: Print for
   the display, Shift+Print for the window, Super+Shift+S without a Print
   key; they land in Pictures/Screenshots.)
