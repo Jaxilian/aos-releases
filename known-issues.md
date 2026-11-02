@@ -62,8 +62,10 @@ an issue on the project.
   is a little idle battery; a machine whose disk never stalled pays it
   too.
 - **Bluetooth** works on the G14 (Intel BE201, on PCIe): Settings sees the
-  adapter and the devices around. Pairing has no agent yet, so a keyboard
-  that wants a passkey typed cannot pair.
+  adapter and the devices around. Since 0.4.42 pairing has an agent: a
+  phone's passkey is confirmed in Settings' bar, a keyboard's is typed on
+  the keyboard; a device that wants a passkey typed into the computer
+  (rare) still cannot pair.
 - **The brightness slider** does nothing on the G14 (its backlight is
   dead under Fedora too).
 - **A fingerprint** opens nothing since sudo went (0.4.31, docs/no-root.md):
@@ -132,9 +134,9 @@ an issue on the project.
   update of either; they are marked wherever they appear.
 - **Firefox may show pages as boxes** on some machines (its sandbox and the
   fonts); fixed in testing, not yet confirmed on hardware.
-- **Printing**: a plain text file sent with `lp` fails (cups-filters'
-  texttopdf); what browsers and viewers print (PDF, PostScript) works.
-  Scanners answer `scanimage -L`; there is no scanning program yet.
+- **Printing**: what browsers and viewers print (PDF, PostScript) works;
+  a plain text file with `lp` since 0.4.42 (DejaVu Sans Mono in the
+  core; before, texttopdf asserted on Noto Sans). Scanners answer `scanimage -L`; there is no scanning program yet.
 - **Firefox and Discord now live in a home of their own** (`~/.var/app/`,
   see [security-model.md](security-model.md)); a profile or login made
   by an earlier release stays in `~/.mozilla` or `~/.config/discord` and
