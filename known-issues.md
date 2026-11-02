@@ -52,9 +52,15 @@ an issue on the project.
 - **Two laptops have been tested**, an ASUS ROG Zephyrus G14 (2026,
   Intel Panther Lake, NVIDIA RTX 5070) and an ASUS Zenbook UM3406GA
   (AMD); docs/hardware.md has their pages. Everything else is untested;
-  reports are what makes the compatibility list.
+  reports are what makes the compatibility list. Since 2026-10-29 only
+  the G14 is available for rounds; the Zenbook's page stands as tested.
 - **Sound** works on the G14's SoundWire (Intel's DSP with Cirrus
   amplifiers) and on HDA in testing.
+- **The NVMe runs without its power saving** (APST off on the kernel
+  line since 0.4.39): the G14's KIOXIA behind Intel VMD lost a
+  completion every few hours and froze everything for 30 s. The cost
+  is a little idle battery; a machine whose disk never stalled pays it
+  too.
 - **Bluetooth** works on the G14 (Intel BE201, on PCIe): Settings sees the
   adapter and the devices around. Pairing has no agent yet, so a keyboard
   that wants a passkey typed cannot pair.
@@ -84,6 +90,10 @@ an issue on the project.
   GPU. Settings -> Display -> Appearance -> Lightweight turns it off.
 - **A new theme reaches an application when it next starts**; the desktop
   itself follows within seconds.
+- **No switching users without logging out.** The pieces are in 0.4.39
+  (a second login screen on VT2, the shell's row, the lock), but the
+  VT2 greeter did not come up in testing (BUGS.md 11), so the row stays
+  hidden until it does. Log out, or a second person waits.
 - **No drag and drop between applications** yet. (Screenshots: Print for
   the display, Shift+Print for the window, Super+Shift+S without a Print
   key; they land in Pictures/Screenshots.)
