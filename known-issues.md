@@ -77,8 +77,16 @@ an issue on the project.
   sleep. A lock screen that lost the keyboard after a resume (when the
   brightness display was up) is fixed in 0.2.8, not yet confirmed on the
   G14.
-- **A port wired to the NVIDIA GPU** (the G14's HDMI) shows nothing: the
-  desktop draws on one GPU and drives only its outputs. Planned, and big.
+- **A port wired to the NVIDIA GPU** (the G14's HDMI) works since 0.4.45:
+  the desktop still draws on the first GPU and copies that display's
+  frames over, through memory on NVIDIA's driver (its import of the
+  first GPU's buffers reads black), so video and games on such a display
+  cost a copy per frame. No variable refresh rate there. The G14's HDMI
+  offered a 3440x1440 monitor only 1920x1080 in its mode list; the
+  desktop asks for the monitor's own timing and gets it. The picture on
+  one Samsung monitor there is dark; the desktop's colours measure exact
+  on the way out, and the monitor's HDMI Black Level setting is the first
+  thing to try.
 - **A display plugged back in** stayed black on 0.3.0; since 0.3.2 the
   desktop draws every display once after a hotplug. Not yet confirmed on
   hardware.
