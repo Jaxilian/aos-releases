@@ -6,7 +6,7 @@ beside every release, Buildroot's `pkg-stats` against NVD) and what was
 done about each entry. A release is refused until every reported CVE
 has a row (`release.sh`). docs/security-policy.md is the cadence.
 
-236 rows: 40 fixed, 156 not applicable, 40 open.
+246 rows: 40 fixed, 166 not applicable, 40 open.
 
 ## Open
 
@@ -254,7 +254,17 @@ Ignored in the report through `security/ignore.mk`; reviewed again when the pack
 | qemu | CVE-2023-1386 | host build tool, not on the image |
 | samba4 | CVE-2011-2411 | HP NonStop Servers' Samba, not samba4 (Debian: NOT-FOR-US) |
 | samba4 | CVE-2026-2340 | vfs_worm is a server-side VFS module; AOS builds the SMB client only, no smbd |
+| sqlite | CVE-2026-119371 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119372 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119373 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119374 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119375 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
 | sqlite | CVE-2026-119376 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119377 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119378 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119379 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119586 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
+| sqlite | CVE-2026-119591 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
 | sudo | CVE-2026-35535 | already fixed by Buildroot patch 0001 (exec_mailer sets group and uid, upstream 3e474c2); sudo is replaced by sudo-rs this round anyway |
 | systemd | CVE-2026-40223 | an assertion reachable only through a unit with Delegate=yes and no User=; no unit on the image has that, apm installs no system units with Delegate= |
 | tar | CVE-2026-18477 | --one-top-level and incremental dumps; aos-update extracts signed tarballs without them |
