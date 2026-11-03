@@ -6,7 +6,7 @@ beside every release, Buildroot's `pkg-stats` against NVD) and what was
 done about each entry. A release is refused until every reported CVE
 has a row (`release.sh`). docs/security-policy.md is the cadence.
 
-229 rows: 38 fixed, 154 not applicable, 37 open.
+236 rows: 40 fixed, 156 not applicable, 40 open.
 
 ## Open
 
@@ -14,13 +14,16 @@ has a row (`release.sh`). docs/security-policy.md is the cadence.
 |---|---|---|---|
 | avahi | CVE-2025-59529 | 2026-10-19 | no upstream fix yet (PR 808 open); the simple-protocol unix socket ignores its client limit, a local user can exhaust avahi-daemon's fds (local DoS of printer discovery only) |
 | cups | CVE-2026-107885 | 2026-10-22 | cupsdCheckJobs() suppresses submission timeouts for every pending job while any connection has a Send-Document in flight (a local client can hold jobs pending); no upstream fix yet (through 2.4.20, GHSA-hhw5-qqmc-p6rg); cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
-| cups | CVE-2026-107886 | 2026-10-22 | double free in printer-class management (CUPS-Add-Modify-Class then CUPS-Delete-Class by a client allowed to manage classes: wheel on AOS); cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
+| cups | CVE-2026-107886 | 2026-10-22 | double free in printer-class management (CUPS-Add-Modify-Class then CUPS-Delete-Class by a client allowed to manage classes: root alone on AOS since 0.4.30, wheel before); cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
 | cups | CVE-2026-107888 | 2026-10-22 | NULL dereference in cupsdCheckJobs() when a job held on create names a temporary printer that was deleted: cupsd dies, every queue stops; cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
 | cups | CVE-2026-107890 | 2026-10-22 | NULL dereference from repeated IPP group tags in a job-creation request: one crafted Print-Job from a local client stops cupsd; cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
 | cups | CVE-2026-55453 | 2026-10-22 | backend/ipp.c keeps CR/LF from a remote printer's marker-message in the scheduler's status stream (log line injection by a malicious printer); cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
 | cups | CVE-2026-55467 | 2026-10-22 | a configured fax queue maps attacker-controlled destination-uri and pre-dial-string to phone options; AOS configures no fax queue; cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
 | cups | CVE-2026-55480 | 2026-10-22 | copy_model() opens a predictable TempDir/<n>.ppd as root without O_EXCL in an lp-writable directory: a process in group lp could race it; cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
 | cups | CVE-2026-61702 | 2026-10-22 | copy_banner() uses the job's attributes-natural-language as a directory component under DataDir/banners (traversal when a banner job-sheet is set); cupsd listens on localhost only and a sandboxed program sees /run/cups read-only, so the client is a local program; fix in cups 2.4.20 (2026-10-05), Buildroot 2026.08 has 2.4.19: the next Buildroot point release, or an own bump before it |
+| expat | CVE-2026-115506 | 2026-11-03 | billion-laughs amplification is detected too late in accountingDiffTolerated(): a crafted document with a large DTD costs tens of seconds of CPU per parse; on the image expat reads trusted system files (dbus and polkit configuration, fontconfig, avahi services, Mesa's drirc) and untrusted input only through git's http helpers and pyexpat in a sandboxed program, so the outcome is one stuck process; fix in libexpat PR 1433, no release past 2.9.0 carries it yet; Buildroot 2026.08 has 2.8.4: the next libexpat release, or an own bump with the patch |
+| expat | CVE-2026-117610 | 2026-11-03 | NULL dereference in externalEntityInitProcessor2() when an external entity subparser gets an empty non-final first chunk, a crash of the parsing program; needs external entity parsing with attacker-controlled chunking, which none of the image's expat users does on untrusted input; fix in libexpat PR 1444, no release past 2.9.0 carries it yet; Buildroot 2026.08 has 2.8.4 |
+| expat | CVE-2026-118370 | 2026-11-03 | signed overflow of attIndex and nPrefixes in storeAtts() from a start tag with over 2^30 attributes (a multi-gigabyte document), an out-of-bounds write; the same exposure as CVE-2026-115506 (trusted system files, git's http helpers, pyexpat in a sandbox); fix in libexpat PR 1450, no release past 2.9.0 carries it yet; Buildroot 2026.08 has 2.8.4 |
 | ffmpeg | CVE-2026-107676 | 2026-10-19 | no upstream release fix yet (master commit 2c2f6e9 only); reached by a crafted Matroska/HEVC/AV1 HDR+ metadata file opened in Videos, leaks 3 bytes |
 | ffmpeg | CVE-2026-107677 | 2026-10-19 | no upstream release fix yet (master commit ed27bfc only); crafted DASH .mpd opened in Videos loops forever |
 | ffmpeg | CVE-2026-107678 | 2026-10-19 | no upstream fix yet (PR 24593 open); crafted MP4 with tens of thousands of pssh boxes exhausts the stack when opened in Videos |
@@ -54,6 +57,8 @@ has a row (`release.sh`). docs/security-policy.md is the cadence.
 
 | Package | CVE | In | Advisory | Why it mattered |
 |---|---|---|---|---|
+| libglib2 | CVE-2026-58016 | 0.4.38 |  | out-of-bounds read (DoS) in g_dbus_node_info_new_for_xml() on malformed introspection XML; fixed by upstream MR 5156 (glib 2.89.0) carried as br2ext/patches/libglib2/0001-0003 on 2.88.3 |
+| gdk-pixbuf | CVE-2026-5201 | 0.4.38 |  | heap overflow in the built-in JPEG loader from a crafted JPEG's component count; fixed by upstream MR 266 (gdk-pixbuf 2.44.6) carried as br2ext/patches/gdk-pixbuf/0001 on 2.42.12 |
 | util-linux | CVE-2026-13595 | 0.1.8 |  | libblkid's partition probers run on every disk udev sees, so a crafted USB stick reached it; 2.41.5 -> 2.42.4 |
 | pcre2 | CVE-2026-89156 | 0.1.8 |  | used by GLib, grep, systemd; 10.47 -> 10.49 |
 | pcre2 | CVE-2026-89157 | 0.1.8 |  | used by GLib, grep, systemd; 10.47 -> 10.49 |
@@ -198,6 +203,7 @@ Ignored in the report through `security/ignore.mk`; reviewed again when the pack
 | gstreamer1 | CVE-2026-73433 | avidemux lives in gst-plugins-good, not built on AOS |
 | gstreamer1 | CVE-2026-73434 | avidemux lives in gst-plugins-good, not built on AOS |
 | host-python-setuptools | CVE-2026-59890 | a host build tool, not on the image |
+| libglib2-bootstrap | CVE-2026-58016 | the bootstrap GLib is built into staging only to break the gobject-introspection cycle (LIBGLIB2_BOOTSTRAP_INSTALL_TARGET = NO); nothing of it is in the image; the shipped libglib2 has its own row |
 | libopenssl | CVE-2026-35191 | QUIC server code; nothing on the image uses OpenSSL QUIC (libcurl 8.22 built without HTTP/3, no OSSL_QUIC references in target binaries); reviewed at 3.6.5 (2026-10-21): the reason still holds |
 | libopenssl | CVE-2026-42772 | QUIC stream reassembly; nothing on the image uses OpenSSL QUIC (libcurl built without HTTP/3); reviewed at 3.6.5 (2026-10-21): the reason still holds |
 | libopenssl | CVE-2026-54873 | QUIC packet buffer retention; nothing on the image uses OpenSSL QUIC (libcurl built without HTTP/3); reviewed at 3.6.5 (2026-10-21): the reason still holds |
@@ -248,6 +254,7 @@ Ignored in the report through `security/ignore.mk`; reviewed again when the pack
 | qemu | CVE-2023-1386 | host build tool, not on the image |
 | samba4 | CVE-2011-2411 | HP NonStop Servers' Samba, not samba4 (Debian: NOT-FOR-US) |
 | samba4 | CVE-2026-2340 | vfs_worm is a server-side VFS module; AOS builds the SMB client only, no smbd |
+| sqlite | CVE-2026-119376 | a host build tool (host-sqlite, for host-python3), not on the image: BR2_PACKAGE_SQLITE is off and no libsqlite3 is in the target |
 | sudo | CVE-2026-35535 | already fixed by Buildroot patch 0001 (exec_mailer sets group and uid, upstream 3e474c2); sudo is replaced by sudo-rs this round anyway |
 | systemd | CVE-2026-40223 | an assertion reachable only through a unit with Delegate=yes and no User=; no unit on the image has that, apm installs no system units with Delegate= |
 | tar | CVE-2026-18477 | --one-top-level and incremental dumps; aos-update extracts signed tarballs without them |
