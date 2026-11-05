@@ -187,7 +187,15 @@ microphone unless its package declares them or the person switches them
 on; sound still plays. The discrete GPU (`gpu = true`, `;gpu`, `--gpu`)
 lifts the Mesa-only driver lists inside the sandbox and sets NVIDIA
 render offload, as `prime-run` does: games declare it, everything else
-stays on the integrated GPU so the discrete one can sleep.
+stays on the integrated GPU so the discrete one can sleep. A program
+that listens on the network declares its ports the same way (`ports`,
+`vpn_ports` for WireGuard tunnels only, 1024 and up): the page says
+"Listens on the network" before Install, apm opens exactly those in the
+firewall on the system store and closes them with Remove, Settings ->
+Network switches them off and on, and a rule file that does not load
+is set aside at boot rather than run without a firewall
+(porting.md). An open port exposes that program's bugs
+to whoever can reach it; its sandbox is what contains them.
 
 The person's say is `~/.config/aos/sandbox/<org>.<name>`, outside every
 program's view: line 1 the flags over the package's (empty: the

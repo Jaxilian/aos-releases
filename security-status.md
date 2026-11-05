@@ -6,7 +6,7 @@ beside every release, Buildroot's `pkg-stats` against NVD) and what was
 done about each entry. A release is refused until every reported CVE
 has a row (`release.sh`). docs/security-policy.md is the cadence.
 
-247 rows: 40 fixed, 166 not applicable, 41 open.
+248 rows: 40 fixed, 167 not applicable, 41 open.
 
 ## Open
 
@@ -205,6 +205,7 @@ Ignored in the report through `security/ignore.mk`; reviewed again when the pack
 | gstreamer1 | CVE-2026-73434 | avidemux lives in gst-plugins-good, not built on AOS |
 | host-python-setuptools | CVE-2026-59890 | a host build tool, not on the image |
 | libglib2-bootstrap | CVE-2026-58016 | the bootstrap GLib is built into staging only to break the gobject-introspection cycle (LIBGLIB2_BOOTSTRAP_INSTALL_TARGET = NO); nothing of it is in the image; the shipped libglib2 has its own row |
+| libnotify | CVE-2013-7381 | the Node.js npm module named libnotify (its CPE says target_sw node.js), not GNOME's libnotify library |
 | libopenssl | CVE-2026-35191 | QUIC server code; nothing on the image uses OpenSSL QUIC (libcurl 8.22 built without HTTP/3, no OSSL_QUIC references in target binaries); reviewed at 3.6.5 (2026-10-21): the reason still holds |
 | libopenssl | CVE-2026-42772 | QUIC stream reassembly; nothing on the image uses OpenSSL QUIC (libcurl built without HTTP/3); reviewed at 3.6.5 (2026-10-21): the reason still holds |
 | libopenssl | CVE-2026-54873 | QUIC packet buffer retention; nothing on the image uses OpenSSL QUIC (libcurl built without HTTP/3); reviewed at 3.6.5 (2026-10-21): the reason still holds |

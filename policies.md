@@ -58,7 +58,11 @@ part of what "third-party" means on AOS.
 
 An AOS machine answers nothing it was not asked. The firewall
 (`/etc/nftables.conf`, loaded before the network) drops every inbound
-packet that is not a reply, ICMP, a DHCP answer or SSH; sshd itself runs
+packet that is not a reply, ICMP, a DHCP answer or SSH, plus the ports an
+installed package declared in its recipe (`[sandbox] ports`,
+`vpn_ports`; apm writes them to `/opt/apm/exports/firewall/`, Software
+shows them on the package's page, Settings -> Network switches them,
+porting.md); sshd itself runs
 only when the person turns remote login on in Settings -> Network (a
 developer's image built with an SSH key has it on; `release.sh` refuses
 to publish one); systemd-resolved's LLMNR
