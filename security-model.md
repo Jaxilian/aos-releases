@@ -172,7 +172,7 @@ would; removing the program removes that too.
 package's manifest carries a `[sandbox]` section -- the files and
 folders of the home it may share (`Downloads`, `Projects`,
 `.gitconfig:ro`), SSH, the network, the camera, the microphone, the
-developer tools, the discrete GPU -- and apm writes the program's
+developer tools, the discrete GPU, X11 -- and apm writes the program's
 command and desktop entry to run through `aos-sandbox` with exactly
 those flags: bubblewrap, unprivileged, the OS read-only, the package and
 what it depends on, the session's sockets, and a home of its own,
@@ -187,7 +187,13 @@ microphone unless its package declares them or the person switches them
 on; sound still plays. The discrete GPU (`gpu = true`, `;gpu`, `--gpu`)
 lifts the Mesa-only driver lists inside the sandbox and sets NVIDIA
 render offload, as `prime-run` does: games declare it, everything else
-stays on the integrated GPU so the discrete one can sleep. A program
+stays on the integrated GPU so the discrete one can sleep. X11
+(`x11 = true`, `;x11`, `--x11`) gives the program XWayland's sockets and
+`DISPLAY`: every X11 client can read every other X11 window's keys and
+contents, so only a package that draws through X11 declares it (Steam
+and its games, Android Studio, Zoom); without it the sockets are not
+there and DISPLAY is unset, and a Wayland program never meets an X11
+one (since 0.4.57; before, every sandbox had them). A program
 that listens on the network declares its ports the same way (`ports`,
 `vpn_ports` for WireGuard tunnels only, 1024 and up): the page says
 "Listens on the network" before Install, apm opens exactly those in the
