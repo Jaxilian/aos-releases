@@ -31,10 +31,6 @@ an issue on the project.
   the recovery key. A machine installed in the clear is encrypted later
   with `aos-encrypt` from the live medium, and `aos-tpm enroll` (or
   Settings -> About) adds the TPM key to an older encrypted one.
-- **A password changed in Settings leaves the keyring on the old one.**
-  homed changes the home's password, but the login keyring (oo7, where
-  Chrome, VS Code and the like keep logins) is not re-keyed, so the next
-  login cannot open it and those programs ask again.
 - **A machine installed before 0.3 keeps its classic account**, with a
   plain home: it updates and works, and nothing converts the home.
   Reinstall for an encrypted one. Settings → Accounts can make new,
@@ -91,7 +87,8 @@ an issue on the project.
   desktop draws every display once after a hotplug. Not yet confirmed on
   hardware.
 - **NVIDIA**: RTX 20 series and newer only (the open kernel modules); games
-  through Proton have run on the Intel GPU, not yet on the NVIDIA one.
+  through Proton start on the NVIDIA GPU since 0.4.50 (libcuda in the
+  image), not yet confirmed on hardware.
 
 ## Desktop
 
@@ -104,18 +101,14 @@ an issue on the project.
   second login on VT2; Ctrl+Alt+F1 and Ctrl+Alt+F2 move between the two.
   Two people at once, not more: one login screen per VT. The second
   session may come up behind its own lock screen; the password opens it.
-- **No drag and drop between applications** yet. (Screenshots: Print for
-  the display, Shift+Print for the window, Super+Shift+S without a Print
-  key; they land in Pictures/Screenshots.)
+- **Screenshots**: Print for the display, Shift+Print for the window,
+  Super+Shift+S without a Print key; they land in Pictures/Screenshots.
 - **Window controls**: the three lights at the top right of every
   window are the desktop's (0.3.2). A program that draws no title bar
   of its own (Blender, Spotify, X11 programs) gets a whole one from the
   desktop and resizes from a narrow band at its edges, with no resize
   cursor yet and no highlight when the pointer is over a light. One
   that draws its own bar whole (Firefox, Chrome, Steam) keeps it.
-- **The shell and the lock screen are in English** when the system is
-  set to Svenska (Settings -> Keyboard -> Language); every AOS
-  application is translated.
 - **The screen reader** (Orca with espeak-ng, Super+Alt+S or Settings)
   reads AOS's applications: each exposes its controls over AT-SPI
   through AccessKit. The shell (the bar, the launcher, the quick
