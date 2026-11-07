@@ -225,6 +225,26 @@ program alone. The portal's D-Bus interface is not on the program's bus
 proxy: the portal takes every `app-aos-*` unit for a host program, which
 may read and change every document of every program (closed 2026-10-23;
 GTK's drag-and-drop of files into a sandboxed program stops with it). A
+file named on a desktop entry's command line (Open With in Files, a
+double click) takes the same way: each argument of a `--launch` start
+that is an existing absolute path or `file://` URI outside the
+program's view is handed to `ade-portal --doc <org>/<name> PATH`, and
+the program gets the path inside `$XDG_RUNTIME_DIR/doc` that comes back;
+one the portal refuses, or that is a link or not its own real path, is
+left out with a line in the journal, never passed unchanged; a folder
+is passed as it is (2026-11-07). The person's theme,
+`~/.config/aos/theme`, is bound read-only at the same place in every
+sandbox, so AOS's own apps keep its colours. A declared share that does not exist yet
+is made, read-only ones too, as long as it passes the rules above.
+AOS's own apps keep their data in their AppData folder like any other
+program: at the first sandboxed start of aos/calendar, weather, clock,
+notepad, calculator and videos, their old folders under `~/.config`,
+`~/.local` and `~/.cache` are moved there, once, never over a folder
+already there; the Clock's alarms reach the person's systemd through
+`aos-clock.path` and `/usr/libexec/aos-clock-sync`, which reads
+`clock --plan`, accepts only `alarm <id> <OnCalendar>` and
+`timer <unix-seconds>` lines and writes the timers itself, since the
+program cannot reach systemd from its sandbox. A
 package that declares nothing runs as the person, and the store says
 "everything, undeclared".
 
