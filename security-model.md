@@ -190,12 +190,33 @@ on; sound still plays. The discrete GPU (`gpu = true`, `;gpu`, `--gpu`)
 lifts the Mesa-only driver lists inside the sandbox and sets NVIDIA
 render offload, as `prime-run` does: games declare it, everything else
 stays on the integrated GPU so the discrete one can sleep. X11
-(`x11 = true`, `;x11`, `--x11`) gives the program XWayland's sockets and
-`DISPLAY`: every X11 client can read every other X11 window's keys and
-contents, so only a package that draws through X11 declares it (Steam
-and its games, Android Studio, Zoom); without it the sockets are not
-there and DISPLAY is unset, and a Wayland program never meets an X11
-one (since 0.4.57; before, every sandbox had them). A program
+(`x11 = true`, `;x11`, `--x11`) gives the program the socket of the
+session's XWayland, the one `DISPLAY` names and only when it is the
+person's own (`/tmp/.X11-unix/X<n>`), and `DISPLAY`: every X11 client can
+read every other X11 window's keys and contents, so only a package that
+draws through X11 declares it (Steam and its games, Android Studio,
+Zoom); without it the socket is not there and DISPLAY is unset. Until
+0.4.63 that held for the path socket only: XWayland also listened on
+the abstract `@/tmp/.X11-unix/X<n>`, which needs no file and is reached
+from anything in the host's network namespace, so a sandbox without
+`--x11` reached the X server with `DISPLAY=:0` all the same, and so did
+gamescope's own XWayland inside Steam's sandbox. Since 0.4.63 ade's
+XWayland and gamescope's open the path socket only, and every sandbox
+runs in a Landlock domain scoped against abstract unix sockets made
+outside it (`/usr/libexec/aos-landlock`, Landlock ABI 6): a program
+reaches the abstract sockets its own sandbox made and no others.
+XWayland asks for no cookie; it serves its own uid and refuses
+another account's. A program
+started from the desktop (`--launch`) keeps its sandbox, and with it
+everything the sandbox was given -- the microphone, the camera, the
+folders, the D-Bus proxy -- while any process of it lives that is not
+a known helper (a session bus, crashpad, gpg's and ssh's agents): so
+an app that hands off to a new copy of itself (Godot's editor,
+Sublime Text) keeps running, and closing a window does not by itself
+end the sandbox while something it started is still running; stopping
+its scope does (since round 132; before, the sandbox ended with its first
+process). Every other run, from a terminal or a hook, ends when its
+program exits. A program
 that listens on the network declares its ports the same way (`ports`,
 `vpn_ports` for WireGuard tunnels only, 1024 and up): the page says
 "Listens on the network" before Install, apm opens exactly those in the
