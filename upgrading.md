@@ -134,8 +134,9 @@ It fetches `SHA256SUMS` and `SHA256SUMS.minisig` from the URL in
 exists, the /etc overlay being writable where the core is not -- (the
 apm package index's release in apm-recipes,
 where `release.sh --publish` puts them), checks the signature against the
-keys in `/opt/apm/etc/keys/trusted` -- the same key every machine already
-trusts for apm -- downloads the core image the file names
+OS release keys in `/usr/share/aos/os-keys` -- the core's own directory,
+apart from apm's keyring (publishing.md) -- downloads
+the core image the file names
 (`aos-<version>-x86_64-core.img`, about 750 MB, uncompressed beyond the
 squashfs's own zstd) and its verity parameters (`-core.verity`), checks
 their sha256 (and the release's unified kernel image, `-core.efi`,

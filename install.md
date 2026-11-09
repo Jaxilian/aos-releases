@@ -33,8 +33,9 @@ AOS; a CHECK is something to look at in [known-issues.md](known-issues.md).
 ## 1. Get the release and check it
 
 From the release page, download `aos-<version>-x86_64.iso`, `SHA256SUMS`,
-`SHA256SUMS.minisig` and the publisher's key, `apm.pub` (key id
-`CA2811A314D6EB0C`). Then:
+`SHA256SUMS.minisig` and the OS release key, `apm.pub` (key id
+`CA2811A314D6EB0C`; the same file is `/usr/share/aos/os-keys/<id>.pub`
+on every AOS machine). Then:
 
 ```sh
 minisign -Vm SHA256SUMS -p apm.pub        # "Signature and comment signature verified"

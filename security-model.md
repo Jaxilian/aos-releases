@@ -56,7 +56,9 @@ gets.
 **Updates and software come signed, or not at all.** apm refuses an
 index that no trusted key verifies; the image ships the official key.
 `aos-update` writes a release's core image into the idle slot only
-when `SHA256SUMS` carries that key's signature, reads it back through
+when `SHA256SUMS` carries the signature of an OS release key, from the
+core's own `/usr/share/aos/os-keys` that apm never reads, so the index
+key cannot sign an update nor the OS key an index; it reads it back through
 its verity hash tree, and the loader boots the new slot on trial (three
 tries) before the desktop confirms it ([upgrading.md](upgrading.md)).
 
@@ -270,9 +272,14 @@ kernel image too (signed PCR 11 policies). For the releases after the
 one that removed sudo, the previous root slot still holds it and can be
 chosen at boot by whoever holds the keyboard; it goes when an update
 overwrites that slot. The kernel's surface for a local account is a
-desktop's: user namespaces (the sandbox needs them), /dev/kvm,
-/dev/net/tun and /dev/fuse for everyone. Package hooks run as root when
-apm installs system-wide. The full list, with what would close each:
+desktop's: user namespaces (the sandbox needs them), /dev/kvm for the
+seat's active account, /dev/net/tun and /dev/fuse for everyone; /proc is
+mounted `hidepid=invisible`, so an account sees its own processes only
+(polkitd, in the `proc` group, still sees every caller's; libsystemd's
+cgroup lookups are patched to take the host's root when PID 1 is
+hidden, br2ext/patches/systemd/0002). Official
+package hooks run as a restricted root under systemd-run when apm
+installs system-wide. The full list, with what would close each:
 open-weaknesses.md.
 
 ## What is next, in order
