@@ -44,7 +44,7 @@ report" page quote this page; the two have to match.
 | What | Only when a person sends one: "Send a report" in Settings, the first-boot setup's consent page, or `aos-report --send` at a terminal. The archive holds the state of the machine, not the person's files: the AOS version and build, the kernel, the hardware and its drivers (`lspci`, `lsusb`, DMI), this boot's system log and the previous boot's warnings, failed services, start-up times, the programs using the most memory, the desktop's log and which programs crashed (no memory dumps), sound and Bluetooth state with the names of paired devices, disks, mounts, network status (addresses, no Wi-Fi passwords), what Software has installed and its sources. With `--hwcheck`, the hardware check's results (`aos-hwcheck`'s JSON: the DMI model, firmware, each check's pass, fail or skip). With `--steam`, Steam's own logs from the home folder -- the one thing from it, opted into separately. `aos-report --what` prints the same list on the machine. Lines that look like passwords, pre-shared keys, private keys or tokens are blanked before the archive is made; a log can still name files, networks or sites a program wrote about, so a report is personal data. |
 | Sent with it | The person's note, the AOS version, and an anonymous machine number: the first 16 hex digits of sha256("aos-report:" + the machine id), so one machine's reports group without the machine id itself leaving. |
 | Where | The `REPORT_URL` of the build (`/usr/lib/aos/report.conf`, or `/etc/aos/report.conf`); https only. The public builds carry no URL yet: until a receiver exists, nothing can be sent at all and Settings shows no Send button; it shows "Report a problem", which opens issues.adelon.eu in the browser (nothing is sent by that). |
-| Consent | A standing consent is the file `/etc/aos/report-consent`, written by the first-boot setup's toggle (off by default) or Settings → Advanced, and removed when the toggle goes off. Without it `aos-report --send` refuses, unless the command carries `--i-asked`: the person's explicit command for this one report (Settings' "Send a report now" passes it; so can a person at a terminal). Nothing is ever sent by a timer or a service. |
+| Consent | A standing consent is the file `/etc/aos/report-consent`, written by the first-boot setup's toggle (off by default) or Settings → About, and removed when the toggle goes off. Without it `aos-report --send` refuses, unless the command carries `--i-asked`: the person's explicit command for this one report (Settings' "Send a report now" passes it; so can a person at a terminal). Nothing is ever sent by a timer or a service. |
 | Recipient | Adelon (the receiver in `br2ext/report-server/`, run by us). The server stores the archive and its metadata under the day's date and the report id; it stores no IP address (the rate limit's counts live in memory only). |
 | Retention | To be decided; the rule until then: as long as the bug it describes needs, and the directory readable by the developers only. Erasure on request by report id. |
 
@@ -52,7 +52,7 @@ report" page quote this page; the two have to match.
 
 | | |
 |---|---|
-| What | fwupd's refresh timer is not enabled. The LVFS is reached only when a person runs `fwupdmgr refresh`, `get-updates` or `update` (Settings has no firmware page yet): the firmware metadata is downloaded, and a chosen firmware file. |
+| What | fwupd's refresh timer is not enabled. The LVFS is reached only when a person runs `fwupdmgr refresh`, `get-updates` or `update`, or presses "Update firmware" in Settings → About (aos-rootd's `FirmwareUpdate`): the firmware metadata is downloaded, and a chosen firmware file. |
 | Where | `https://cdn.fwupd.org/downloads/firmware.xml.zst` (metadata) and the firmware URLs it names on the same host. |
 | Data sent | An HTTPS GET with your IP address and fwupd's user agent (its version). The metadata request carries no device identifiers; which firmware file is then requested reveals the device it is for. Reports of an update's outcome (device ids, firmware versions, success or failure) go to `https://fwupd.org/lvfs/firmware/report` only with `fwupdmgr report-history`: `AutomaticReports` and `AutomaticSecurityReports` are off in `/etc/fwupd/remotes.d/lvfs.conf`. |
 | Recipient | The Linux Vendor Firmware Service (the Linux Foundation); its privacy page is <https://lvfs.readthedocs.io/en/latest/privacy.html>. |
@@ -76,14 +76,16 @@ report" page quote this page; the two have to match.
 | Where | `https://geocoding-api.open-meteo.com/v1/search` (the search) and `https://api.open-meteo.com/v1/forecast` (the forecast), plain HTTPS GETs without a key or an account. |
 | Data sent | Your IP address, the words you searched for, the chosen place's latitude and longitude (two decimals of a city's centre, not your position: AOS reads no GPS and no Wi-Fi location), the language code for the place names, and curl's user agent. No machine identifier. |
 | Recipient | Open-Meteo (Switzerland), under its privacy policy at open-meteo.com. |
-| Retention | Theirs. AOS keeps the place in `~/.config/aos/weather` and the last forecast in `~/.cache/aos/weather`; removing the first file ends the fetching. |
+| Retention | Theirs. AOS keeps the place in `.config/aos/weather` and the last forecast in `.cache/aos/weather` inside Weather's own folder, `~/AppData/aos.weather` (`aos-sandbox` moves them there from `~/.config` and `~/.cache` at the first sandboxed start); removing the first file ends the fetching. |
 
 ## Also on the network, sending nothing about you
 
 - **Name resolution:** every program's DNS queries go to the network's
-  resolver; when the network names none, systemd-resolved's built-in
-  fallbacks (Cloudflare, Google, Quad9) are used. A resolver sees the
-  names you look up. European defaults are planned (white-paper.md).
+  resolver; when the network names none, Quad9 (a Swiss foundation),
+  over TLS when it offers it, is the only fallback
+  (`/etc/systemd/resolved.conf.d/10-aos.conf`; systemd's own list of
+  Cloudflare, Google and Quad9 is replaced). A resolver sees the names
+  you look up.
 - **Printers:** cups-browsed and Avahi listen for printers on the local
   network and publish nothing.
 - **Third-party programs** (Firefox, Chrome, Steam, VS Code, Discord

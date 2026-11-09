@@ -311,16 +311,15 @@ open-weaknesses.md.
    repositories follow. What stays weak afterwards is kept honest in
    open-weaknesses.md.
 2. **The rest of the sandbox.** The private home and the declared
-   directories are in (above); what is still to come: a file dialog the
-   desktop draws, so a sandboxed program reaches one chosen file outside
-   its home and nothing else (the document portal's mount is in, the
-   dialog's half is next), and a folder picked at Open Folder granted
-   once and the program restarted into it -- until then a program that
-   needs more declares a folder, or the person grants one; Landlock fencing the view a second
-   time from inside; a package that cannot be installed without a
-   declaration, once every recipe has one; and AOS's own programs in it
-   too, once that dialog exists (it hands them an open file, so they
-   need no view of the home). The declaration is what answers the child with the download: a
+   directories are in (above), and so is the file dialog the desktop
+   draws (ade-portal's chooser): a single file picked outside the
+   program's view reaches it through the document portal and nothing
+   else, and a folder it lacks is asked for (Allow / Don't allow),
+   granted and the program restarted into it. AOS's preinstalled apps
+   run in it too, each with a `[sandbox]` of its own. What is still to
+   come: Landlock fencing the view a second time from inside, and a
+   package that cannot be installed without a declaration, once every
+   recipe has one. The declaration is what answers the child with the download: a
    "free RAM" package that asks for the whole home says so on its page.
 2. ~~**Verified root slots.**~~ Done 2026-10-06 (0.2.0): the cores, above.
    The root hash is on the ESP, named by the signed `SHA256SUMS` of the

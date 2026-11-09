@@ -20,8 +20,9 @@ AOS; a CHECK is something to look at in [known-issues.md](known-issues.md).
 
 ## What you need
 
-- A 64-bit PC from about 2012 on (the CPU must support x86-64-v2; a Core
-  2 or older will not boot it). Intel or AMD graphics work out of the box;
+- A 64-bit PC from about 2009 on (the CPU must support x86-64-v2, that
+  is SSE4.2 and POPCNT: an Intel Core i3/i5/i7 or newer, an AMD from
+  2011 on; a Core 2 or older will not boot it). Intel or AMD graphics work out of the box;
   NVIDIA cards from the RTX 20 series on use NVIDIA's open driver.
 - A USB stick of 2 GB or more, for the installer. It is erased.
 - A disk of at least 16 GB to install onto. **It is erased completely.**
@@ -154,11 +155,12 @@ undoes it; the loader menu's (hold Space while the machine starts) "AOS
   AOS, and are marked).
 - **Updates**: AOS looks once a day and says so when there are some.
   Software -> Update installs every application update and a new AOS in
-  one step; a new AOS starts at the next restart, and Settings -> Advanced
-  ("start the other version", or the hidden loader menu: hold Space) goes
-  back to the one before if anything is wrong.
-  "Follow the stable channel" there takes only releases that have had
-  their time on the newest one. A machine is updated, never reinstalled.
+  one step; a new AOS starts at the next restart. To go back to the one
+  before if anything is wrong: hold Space at start for the loader menu
+  and pick the older entry, or use the recovery screen's "Go back to the
+  previous version of AOS" (it runs `aos-update --rollback`, which needs
+  root). Software -> Updates -> "Follow the stable channel" takes only
+  releases that have had their time on the newest one. A machine is updated, never reinstalled.
 - **Encrypting later**: a machine installed without "Also encrypt the
   whole disk" is encrypted in place from the live stick, on mains
   power: `aos-encrypt DISK PASSFILE` on its root console, Ctrl+Alt+F2 (the passphrase on the file's

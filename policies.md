@@ -48,7 +48,8 @@ them sends anything about the machine: the daily update check (below)
 fetches the signed indexes, systemd-timesyncd asks a time server for the
 time, and cups-browsed with avahi listens for printers on the local
 network while publishing nothing. fwupd fetches the LVFS's firmware list
-only when someone runs `fwupdmgr`, and its automatic reports are off.
+only when someone runs `fwupdmgr` or presses "Update firmware" in
+Settings → About, and its automatic reports are off.
 
 Third-party software does what it does; Firefox, Discord, Steam and Visual
 Studio Code have their own telemetry and their own settings for it. That is
@@ -123,11 +124,13 @@ covers their integrity ([layout.md](layout.md)).
 ## Base OS updates
 
 A release's core image (a squashfs with its dm-verity hash tree), named
-in a `SHA256SUMS` signed with the apm key, written by `aos-update` into
+in a `SHA256SUMS` signed with an OS release key (`/usr/share/aos/os-keys`,
+not the apm key), written by `aos-update` into
 the idle one of two core slots and checked through its verity; systemd-boot gives it three tries and the desktop coming up confirms it, else the
-previous slot boots, and Settings -> Advanced ("start the other version"),
-`aos-update --rollback` or the hidden loader menu (hold Space) goes back by
-hand ([upgrading.md](upgrading.md)). Each slot's unified kernel image
+previous slot boots, and the hidden loader menu (hold Space), the
+recovery screen ("Go back to the previous version of AOS", which runs
+`aos-update --rollback` as root) goes back by hand; Settings has no button
+for it and an installed machine's terminal cannot run it ([upgrading.md](upgrading.md)). Each slot's unified kernel image
 carries its own kernel arguments and profiles, and once a release is
 confirmed `boot-sync` brings the loader files on the ESP up to the
 release's. Accounts,
