@@ -7,7 +7,7 @@ The kernel version is pinned in
 
 ```
 BR2_LINUX_KERNEL_CUSTOM_VERSION=y
-BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="7.2.12"
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="7.2.15"
 BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_7_1=y
 ```
 
@@ -34,7 +34,7 @@ make
 
 Two things to watch. Buildroot's kernel patches and `linux-firmware` are tested
 against the version it ships, so a hand-picked kernel is less well tested. And
-the NVIDIA modules must support it -- 610.57.04 builds against 7.x, but a much
+the NVIDIA modules must support it -- 620.70.06 builds against 7.x, but a much
 newer kernel may need a newer driver.
 
 ### Shipping it
@@ -147,12 +147,34 @@ to the overlay's `passwd`/`group`, writes the slot's os-release and
 verity parameters to `/boot/efi/aos/<slot>/`, and puts the UKI on the
 ESP as `EFI/Linux/aos-<version>-<slot>+3.efi`: a loader entry with
 three tries, which `bootctl set-oneshot` makes the next boot's choice.
-`aos-update-confirm.service`, twenty seconds after the desktop's
-service is up (the login screen's, greetd, or the demo's autologin,
-ade) and if it has not restarted meanwhile, confirms the running slot:
-its entry loses the counters, the other slot's entry is set aside
-(`+0-3`). A slot that never reaches that point uses up its tries and
-is set aside by the loader itself, and the confirmed slot boots. The
+It records the staged slot and version in `/var/lib/aos/staged`.
+`aos-update-confirm.service` (`/usr/lib/aos/confirm-check`) confirms
+the running slot only when both have happened in this boot (decided
+2026-11-10): ade **presented** a frame with a client in it on a display
+(the compositor's journal line `ade: first frame presented`, matched
+on `_UID`, which journald takes from the sender's credentials), and a
+person **logged in** (a logind session of class user on seat0, local,
+active, uid 1000 or more, not the greeter's or the setup account's;
+the demo's and a kiosk's autologin count). On a machine with the login
+screen the greeter's own compositor must have presented too: the
+greeter account runs nothing a person chooses, so its line cannot be
+forged, and a person's line alone could be. It polls every five
+seconds for the whole boot, since a login may come hours later; then
+the old checks (logind, D-Bus and homed not failed, greetd and ade
+not restarted, no crash line in the session's compositor) and
+`aos-update --confirm`: the entry loses its counters, the other slot's
+entry is set aside (`+0-3`), `/var/lib/aos/staged` goes. systemd's own
+`systemd-bless-boot.service` is disabled: nothing else blesses a boot.
+Every boot without both is one of the three tries the loader counts
+(it renames the entry before it boots it); after the third the entry
+is `+0-3`, sorts last, and the confirmed slot boots by itself. That
+boot finds `/var/lib/aos/staged` naming a slot that is now set aside:
+it writes the fallback to `/var/log/aos-update.log` and to
+`/var/lib/aos/update-fallback`, which `aos-update-notice` (a user unit
+of the session) shows as a notification at the next login, in English
+or Swedish; the file goes two minutes after that login. Nothing tries
+the release again by itself: Software installs it again only when
+Upgrade is pressed. The
 hidden boot menu (hold Space) lists the other slot's entry by hand, and
 `--rollback` does the same from the running system.
 Nothing on the data partition -- accounts, `/home`, installed programs,

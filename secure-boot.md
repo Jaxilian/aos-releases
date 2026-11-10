@@ -142,13 +142,163 @@ Secure Boot cannot be on until its firmware's factory keys are restored.
   rolled back to compares its grub-install against it, finds it equal,
   and leaves the signed loader in place.
 
+## The TPM key: PCR 7 and a signed PCR 11 policy
+
+Until round 136 the installer, aos-encrypt and aos-tpm ran
+`systemd-cryptenroll --tpm2-device=auto` with no PCR option. Since
+systemd 258, the version AOS ships, that binds to no PCR at all
+(its NEWS: "The new default PCR mask for new TPM2 enrollments is thus
+empty"), not to PCR 7 as these pages said: any system on the same machine, a live stick or
+another distribution, could unseal the key. Now every enrolment
+(aos-install, by default or with `--encrypt`; aos-encrypt; `aos-tpm
+enroll` and `migrate`) goes through `tpm_seal` in
+`/usr/lib/aos/tpm.sh` (by `tpm_enroll`, or `tpm_migrate` for
+`migrate`):
+
+    systemd-cryptenroll --tpm2-device=/dev/tpmrm0 --tpm2-pcrs=7 \
+        --tpm2-public-key=/usr/lib/systemd/tpm2-pcr-public-key.pem \
+        --tpm2-public-key-pcrs=11 DEV
+
+(`--tpm2-pcrs=7` alone on a build whose core has no PCR public key),
+and then reads the token back (`tpm_bound`: every `systemd-tpm2`
+token object in `cryptsetup luksDump --dump-json-metadata`, read with
+jq, must have `tpm2-pcrs` [7] and, with the public key,
+`tpm2_pubkey_pcrs` [11] and a `tpm2_pubkey` that is the shipped PEM;
+nothing else in the header counts); a token that does not is wiped
+again and the enrolment counts as failed. No enrolment is made after
+a rescue shell in the boot (`/run/aos/pcr-capped`, below): its PCRs
+are not the machine's. That read-back is also the
+installer's whole test of its encryption default (layout.md,
+Encryption): the live medium cannot unseal the key it just made, by
+design. The key opens only when both hold:
+
+- **PCR 7** is what it was at enrolment: Secure Boot's state and the
+  certificate that verified the chain (shim, the AOS MOK key).
+- **PCR 11** has a value signed with the AOS PCR key. systemd-stub
+  measures the UKI's sections (kernel, initramfs, command line,
+  os-release, the chosen profile) into PCR 11; the initramfs then adds
+  the word `enter-initrd` (systemd-pcrextend) just before it asks the
+  TPM. post-image.sh signs, for each profile of core.efi, the PCR 11
+  value of exactly that state (`ukify --pcr-private-key
+  --pcr-public-key --phases=enter-initrd`), into the UKI's `.pcrsig`;
+  the stub hands it to the initramfs as
+  `/.extra/tpm2-pcr-signature.json`, which init passes to
+  systemd-cryptsetup (`tpm2-signature=`).
+
+Right after the TPM attempts (the unseal and its debug retry), before
+the ESP is mounted, the keymap loaded, the passphrase asked, any fsck
+or any filesystem mounted, init extends PCR 11 with `leave-initrd`:
+from then on no signature matches, so nothing parsed after it (a
+passphrase-opened volume, btrfs, vfat), neither the running system's
+root nor a shell in the initramfs, can unseal the key again. If the
+TPM refuses that word, init extends PCR 11 with
+`aos-leave-initrd-failed` instead, which moves it off the signed value
+as well; if it refuses both, init says so and goes on to the prompt
+(never stranding the person; TODO G19 with the final extend). When
+both `enter-initrd` and `leave-initrd` went in, init writes
+`/run/aos/pcr-phases-ok`, which `aos-tpm migrate` requires.
+
+`fail` (a reason and a shell) never restarts the machine: an open
+encrypted partition is first `cryptsetup luksSuspend`ed (its key leaves
+the kernel; `cryptsetup luksResume aos` asks for the passphrase or the
+recovery key before 'exit' carries on), PCR 11 is moved off as above,
+PCR 7 gets `aos-rescue-shell` (no PCR-7 token can unseal in that shell),
+`/run/aos/pcr-capped` is written and `pcr-phases-ok` removed, and then
+the shell comes. Before round 136 an open disk or a refused extend
+restarted the machine every 30 s, a loop with no way in. A new release is a new kernel and initramfs, a
+new PCR 11 value and a new signature by the same key: updates need no
+re-enrolment.
+
+live.efi is not PCR-signed: the live medium carries no signature, so
+its root cannot unseal an installed disk even with PCR 7 the same
+(tpm-test.py tries it with the installed UKI's signature and
+`enter-initrd` extended by hand). A Fedora kernel through our shim
+fails PCR 7 and PCR 11. With Secure Boot off the stub accepts a
+command line from the loader (`rdinit=/bin/sh`), and a shell could
+then extend `enter-initrd` itself: PCR 7 is what stops that, since
+Secure Boot off is a different PCR 7 than the one enrolled with it on.
+A disk enrolled with Secure Boot off has only the "taken out of its
+machine" protection, as before.
+PCR 7 also moves with a firmware or dbx update (systemd's reason for
+dropping it as a default): the next boot asks for the passphrase once,
+and `aos-tpm enroll` (Settings) seals the key again.
+
+**The prompt's keyboard.** `/etc/vconsole.conf` is on the encrypted
+partition, so the initramfs cannot read it before the prompt. The name
+of its keymap goes on the ESP instead, as `aos/keymap` (one line,
+`[A-Za-z0-9_-]`, 32 characters at most): aos-install writes it with the
+layout it was given, boot-sync (at every confirm) copies it from
+vconsole.conf, so a layout changed in Settings reaches the prompt from
+the boot after the next. The initramfs carries kbd's `loadkeys`, gzip
+and the i386 keymaps; it mounts the ESP only after the TPM attempts and
+`leave-initrd`, and loads the named map before asking. The ESP is not
+authenticated: someone who can write it can only pick another shipped
+keymap. The recovery key is modhex letters (`cbdefghijklnrtuv`) only,
+the same keys on every Latin layout, so it types right even when the
+keymap is wrong; it is shown in groups of eight and typed without the
+spaces.
+
+**The PCR key.** `aos-pcr.key` (RSA 2048, mode 600) and `aos-pcr.pem`
+(its public half) beside the Secure Boot key in `~/.config/aos-sb`
+(`$AOS_SB_KEYS`), never in git or the image. post-build.sh copies the
+`.pem` into the core as `/usr/lib/systemd/tpm2-pcr-public-key.pem`;
+post-image.sh signs with the key and refuses a target whose public key
+is not that one; release.sh refuses a build when the key is on the
+host but the core does not ship its `.pem`, or core.efi lacks one
+`.pcrsig` per profile or carries another `.pcrpkey`. Once the key
+exists, its fingerprint is committed as
+`br2ext/board/aos/keys/aos-pcr.fingerprint` (`sha256sum < aos-pcr.pem`,
+the hash alone): from then on release.sh demands the `.pem`, the
+`.pcrpkey` with that hash and a `.pcrsig` per profile whether or not
+the private key is on the host, so a build from a host without it can
+never ship and leave every sealed disk at its passphrase. Without the
+key the build binds to PCR 7 alone. Made once, on the build host:
+
+```sh
+cd ~/.config/aos-sb && umask 077
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out aos-pcr.key
+openssl pkey -in aos-pcr.key -pubout -out aos-pcr.pem
+```
+
+(The build's `output3/host/bin/openssl` when the host has none.) A
+lost key means the next release cannot sign: every TPM key asks for the
+passphrase once and `aos-tpm enroll` binds it to the new key. A leaked
+key lets its holder sign their own UKI's PCR 11, but PCR 7 still needs
+their UKI to boot through shim, i.e. signed with the Secure Boot key.
+
+**Disks enrolled before.** `aos-tpm migrate` rebinds a TPM token that
+`tpm_bound` does not accept. It is not a boot service: `aos-update
+--confirm` runs it once the running slot is confirmed, so a release
+that fails to boot never changes the key and the slot before it keeps
+opening. It changes nothing, exit 0 and one line saying why, unless:
+Secure Boot is on (with it off any system started on the machine sees
+the same PCR 7, so binding to it adds no protection and only a
+recovery-key prompt at every firmware or dbx update); init wrote
+`/run/aos/pcr-phases-ok` this boot and no rescue shell capped the
+PCRs; and, on a build with the PCR key, this boot's UKI carried a
+signature (`/run/aos/tpm2-pcr-signature.json`) and every UKI on the
+ESP, the other slot's too, carries the AOS PCR key, so a rollback still
+opens without the recovery key. Then it seals the new token unlocking
+with the old one (`--unlock-tpm2-device`: a pre-136 token has no PCRs
+and a PCR-7-only token keeps opening after the initramfs), checks the
+new token with `tpm_bound`, and only then wipes the old ones by slot
+number; a new token that is not right is wiped and the old stays
+(exit 1). Nothing is asked of the person.
+
+A disk sealed with Secure Boot off (aos-install, aos-encrypt, `aos-tpm
+enroll`) is still bound to PCR 7 (and the signed PCR 11), which adds
+the firmware-update prompt without adding protection while Secure Boot
+stays off; whether such an enrolment should bind no PCR until Secure
+Boot is turned on (and `migrate` then binds it) is the owner's call
+(round 136).
+
 ## What remains open (the threat model's gap)
 
 What this stops: an attacker with the disk but not the AOS key cannot
 make the machine run their kernel, initramfs, command line or core
-while Secure Boot is on; a TPM-sealed aos partition (PCR 7) unseals
-only on the chain that starts with shim and the AOS key in the MOK
-list. What it does not:
+while Secure Boot is on; a TPM-sealed aos partition (PCR 7 and a
+signed PCR 11, above) unseals only in the initramfs of a UKI signed
+with the AOS keys. What it does not:
 
 - **Downgrade.** An older signed UKI and its core are still signed.
   Someone who can write the disk can put a vulnerable older release
@@ -165,15 +315,28 @@ list. What it does not:
   .sbat section (post-image.sh) since 2026-10-20; Fedora's shim carries
   Fedora's SbatLevel, so a lower N is not refused until a shim of our
   own ships (docs/product-impl.md R4).
-- **Modules: signatures enforced, no lockdown.** Every module in the
-  image is signed with the kernel's build key, the NVIDIA ones included
-  (the kernel's build signs external modules at install), and the UKI's
-  command line carries `module.sig_enforce=1`, so with Secure Boot on an
-  unsigned or altered module is refused; with it off GRUB's arguments
-  apply and nothing is enforced. Lockdown (integrity mode) is not used:
-  it refuses hibernation, which AOS has since 0.3.12. What lockdown
-  would add on top (no /dev/mem, no unsigned kexec, no raw PCI access
-  from root) stays open.
+- **Modules: signatures enforced.** Every module in the image is
+  signed with the kernel's build key, the NVIDIA ones included (the
+  kernel's build signs external modules at install), and the UKI's
+  command line carries `module.sig_enforce=1`.
+- **Lockdown, integrity mode, under Secure Boot** (round 136). The
+  kernel carries `patches/linux/0002-lockdown-...`: with
+  `CONFIG_LOCK_DOWN_IN_EFI_SECURE_BOOT` the lockdown LSM raises itself
+  to integrity when the EFI stub saw Secure Boot on
+  (`boot_params.secure_boot`, which also honours shim's MokSBState), the
+  way Fedora's and Ubuntu's kernels do. The same signed UKI boots with
+  Secure Boot off, and then lockdown is `[none]`: a machine whose owner
+  turned Secure Boot off has given up the chain anyway, and a
+  `lockdown=` on the command line would lock that owner out of what
+  they chose. Under it even root cannot change the running kernel:
+  unsigned modules, /dev/mem and /dev/port, MSR writes, ioperm/iopl,
+  kexec_load, raw PCI BAR and config writes through sysfs, ACPI table
+  and custom-method overrides, writable debugfs files,
+  bpf_probe_write_user, unsafe module parameters. Integrity mode leaves
+  perf, tracing, kprobes and BPF reads alone (those are confidentiality
+  mode's). Hibernation is refused too, and AOS dropped it (power.md).
+  `/sys/kernel/security/lockdown` reads `none [integrity]
+  confidentiality`; `lockdown136-test.py` checks it.
 - **The firmware's own CA.** Fedora's shim 16.1 is signed by the
   Microsoft UEFI CA 2011. Microsoft signs new shims with its 2023 CA;
   a machine whose db has only the 2023 CA (new ones, later) needs a

@@ -11,7 +11,7 @@ sees. Supersedes the slot description in `usr/lib/aos/slot.sh` for 0.1.x.
 | 2 | AOS_ESP| The EFI system partition: shim and systemd-boot (`EFI/BOOT`), the loader's configuration (`loader/loader.conf`), one unified kernel image per slot (`EFI/Linux/aos-<version>-<slot>[+N[-M]].efi`), and per slot its os-release and verity parameters as text (`/aos/a`, `/aos/b`) |
 | 3 | aos-a  | Core A: a squashfs image with its dm-verity hash tree appended. Raw, no filesystem of its own. |
 | 4 | aos-b  | Core B, the same                                            |
-| 5 | aos    | The OS a person sees: ext4 (LUKS2 around it when the installer was asked to encrypt). |
+| 5 | aos    | The OS a person sees: btrfs on a fresh install since round 136, ext4 on a disk installed before (LUKS2 around either when encrypted). |
 
 A core is immutable: every block the kernel reads from it is checked
 against the hash tree, whose root hash the slot's unified kernel image
@@ -39,6 +39,45 @@ with those three folders, and a person's own files are under users/.
 
 On the live ISO /aos is a tmpfs with the same three directories: the live
 home is writable now, and the installer copies the core, not a tree.
+
+### btrfs (round 136, 2026-11-10)
+
+A fresh install makes the partition btrfs (`mkfs.btrfs -L aos`); a disk
+installed before stays ext4 and nothing converts it (DECISIONS.md
+2026-11-03): the initramfs asks blkid what the partition holds and
+mounts either, ext4 exactly as before (`e2fsck -p`, `mount -t ext4`). btrfs is built into the kernel
+(`CONFIG_BTRFS_FS=y`, with POSIX ACLs), since the initramfs has no
+modules and no modprobe.
+
+- **Subvolumes**: `apm` and `users` are subvolumes of the top level;
+  `aos/` (etc, var, the swap file) stays a plain directory in it. The
+  paths are the ones ext4 had, so the mounts and binds are unchanged
+  and nothing names a subvolume (no `subvol=`). A directory cannot
+  become a subvolume later without a copy, and a subvolume is what a
+  snapshot takes: the store (a package update to roll back) and the
+  homes (a backup) are the two worth one. Nothing snapshots yet. The
+  swap file is kept out of both, since btrfs refuses to snapshot a
+  subvolume holding an active swap file.
+- **Mount options** (the initramfs and the installer): `noatime`, so a
+  read writes no metadata (copy-on-write makes every atime update a
+  new metadata block, and snapshots would pin the old ones);
+  `compress=zstd:1`, the cheapest zstd level, for the store and /var,
+  which compress to about half and are read far more than written;
+  btrfs skips data that does not compress, and the homes' LUKS images
+  are random bytes and NOCOW anyway (homed sets it), as is the swap
+  file. No `discard=async` on the line: the kernel turns it on by
+  itself for a device that can discard (6.2 and later); behind LUKS
+  the mapping passes no discards, as with ext4.
+- **No fsck at boot**: btrfs checks its own checksums on every read and
+  replays its log at mount; `btrfs check` is a repair tool, not a boot
+  step.
+- **The swap file** is `btrfs filesystem mkswapfile` (NOCOW, not
+  compressed, preallocated), not dd: a copy-on-write file is refused by
+  swapon. It is extra swap behind zram on an encrypted partition, not a
+  place for a hibernation image: there is none (power.md).
+- **Homes** stay LUKS2 images with ext4 inside (`--storage=luks` is
+  given everywhere a home is made: homed's own default on a btrfs
+  /home would be a plain subvolume, in the clear).
 
 ## Homes
 
@@ -73,44 +112,62 @@ pam_unix; its home is a plain directory.
 
 ## Encryption
 
+**On by default where a TPM can open it** (round 136, DECISIONS.md
+2026-11-10): from the live medium onto a disk that is not removable,
+on a machine with a TPM 2.0 (`/dev/tpmrm0`), `aos-install` without
+`--encrypt` or `--no-encrypt` encrypts all the same, with a recovery
+key it makes (64 modhex letters, enrolled without separators so it
+types the same on every layout, printed once at the end in eight
+groups of eight joined by spaces, `Recovery key: ...`, and typed
+without the spaces). "Can open it" is
+checked the way the live medium can: the installer cannot unseal the
+key itself, since the policy opens it only in the initramfs of a
+signed core UKI and the live medium is neither (secure-boot.md, "The
+TPM key"). So the check is the enrolment: `systemd-cryptenroll` must
+succeed and the token it wrote must carry `tpm2-pcrs` [7] and, on a
+build with the AOS PCR key, `tpm2_pubkey_pcrs` [11] (read back with
+`cryptsetup luksDump --dump-json-metadata`; `tpm_enroll` and
+`tpm_bound` in `/usr/lib/aos/tpm.sh`). If either fails the header is
+wiped and the partition stays in the clear, and the installer says so;
+`aos-encrypt` can encrypt it later. Without a TPM the default is off,
+as before. The graphical
+installer's box follows the same test: ticked when `/dev/tpmrm0` is
+there, and then it asks no passphrase but makes the recovery key
+itself and shows it on its Done page; unticked it passes
+`--no-encrypt` (through aos-rootd). Writing a stick for another
+machine from an installed system never encrypts by default: the TPM
+would be this machine's.
+
 `aos-install --encrypt FILE` (the graphical installer's "Also encrypt
 the whole disk", with a passphrase of its own) puts LUKS2 around the
 aos partition before the filesystem: programs, settings and logs are
 encrypted too, and the homes twice; the cores are not (public images,
 verified). On a machine with a TPM 2.0 the installer seals a second
-key to it (`systemd-cryptenroll --tpm2-device=auto`, bound to PCR 7,
-the Secure Boot state) and the initramfs opens the partition with it
-(`systemd-cryptsetup attach ... tpm2-device=auto`) without a word; the
+key to it (`tpm_enroll` in `/usr/lib/aos/tpm.sh`: `systemd-cryptenroll
+--tpm2-pcrs=7 --tpm2-public-key=... --tpm2-public-key-pcrs=11`,
+bound to PCR 7, the Secure Boot state, and to PCR 11 through a policy
+signed with the AOS PCR key: docs/secure-boot.md, "The TPM key"; PCR 7
+alone on a build without that key). aos-encrypt, `aos-tpm enroll` and
+`aos-tpm migrate` (from `aos-update --confirm`, with Secure Boot on
+only) seal with the same helper, and
+the initramfs opens the partition with it (`systemd-cryptsetup attach
+... tpm2-device=/dev/tpmrm0,tpm2-signature=...`) without a word; the
 passphrase is the recovery key, asked on the console when the TPM will
 not answer -- the disk in another machine, the firmware's Secure Boot
-state changed, no TPM at all -- five tries. With Secure Boot off PCR 7
+state changed, no TPM at all -- five tries, with the keymap named on
+the ESP (`aos/keymap`, secure-boot.md, "The prompt's keyboard")
+loaded first. With Secure Boot off PCR 7
 does not change with what booted, so the TPM key protects a disk taken
 out of its machine, not a machine whose boot path was swapped; with it
-on, only the signed chain of docs/secure-boot.md (shim, the AOS key,
-the slot's UKI) unseals it. Turning Secure Boot on, or enrolling the
+on, only the initramfs of a UKI signed with the AOS keys unseals it. Turning Secure Boot on, or enrolling the
 AOS key, can change PCR 7: the next boot may ask for the passphrase
 once (then `aos-tpm` seals it again). tpm-test.py drives both boots in QEMU
-with swtpm (AOS_TPM=1). The ESP and the cores carry nothing of yours.
+with swtpm (AOS_TPM=1). The cores carry nothing of yours; the ESP only
+the name of the console keymap.
 The swap file
 (`aos/aos/swapfile`) is made by the installer only on an encrypted
 partition: in the clear it would hold pages of the encrypted homes;
-zram is the swap otherwise. Hibernation makes one on any installed
-disk, below.
-
-## The swap file and hibernation
-
-`aos-hibernate enable` (power.md) puts a swap file of the machine's RAM
-at `aos/aos/swapfile` -- the installer's own on an encrypted disk, grown
-if it is smaller -- with `aos/aos/hibernate.conf` beside it:
-`offset=N`, the file's first extent in pages. That is the whole resume
-location: the device is the aos partition, which the initramfs has just
-found (and opened, when it is LUKS) by the time it reads the conf off a
-read-only `noload` mount, so the partition's `major:minor` from sysfs
-and the offset go to `/sys/power/resume_offset` and `/sys/power/resume`
-before e2fsck and the mounts. A signed UKI's command line cannot carry
-`resume=` per machine, which is why the conf lives on the partition and
-not in GRUB. zram keeps priority 100; the file is at 10, the kernel's
-image goes there. On a disk in the clear the image is in the clear.
+zram is the swap otherwise. There is no hibernation (power.md).
 
 ## The greeter
 
@@ -136,8 +193,9 @@ firmware -> EFI/BOOT/BOOTX64.EFI: shim (signed build) or systemd-boot
          -> systemd-boot (EFI/BOOT/grubx64.efi, the name shim loads)
          -> EFI/Linux/aos-<version>-<slot>[+N[-M]].efi: the slot's UKI
             (systemd-stub + kernel + microcode + initramfs + command line)
-         -> initramfs: veritysetup open the core, mount it, fsck and mount
-            aos (LUKS open first when encrypted), bind the tree, switch_root
+         -> initramfs: veritysetup open the core, mount it, mount aos
+            (LUKS open first when encrypted; e2fsck first on ext4), bind
+            the tree, switch_root
          -> systemd
 ```
 
@@ -148,15 +206,16 @@ console, safe graphics, no kiosk -- and the other slot).
 
 **Which slot boots** is the file name (systemd-boot's boot counting,
 `slot.sh`): `aos-0.3.30-b+3.efi` is a slot an update staged, with three
-tries; each start uses one (`+2-1`, `+1-2`, `+0-3`); reaching the
-desktop confirms it (`aos-update --confirm`, run by
-aos-update-confirm.service): the name loses its counters and the other
+tries; each start uses one (`+2-1`, `+1-2`, `+0-3`); a boot where ade
+presented a picture and a person logged in confirms it (`aos-update
+--confirm`, run by aos-update-confirm.service, upgrading.md): the name
+loses its counters and the other
 slot's entry is set aside as `+0-3`, listed but never the default. A
 slot that fails three times ends as `+0-3` too, and the confirmed slot
 boots. `aos-update --rollback` gives the other slot's entry one try and tells
 the loader to take it (`bootctl set-oneshot`, by the entry's id, the
-name without counters); a trial that reaches the desktop confirms
-itself, one that does not is set aside at the following reset and the
+name without counters); a trial with a picture and a login confirms
+itself, one without is set aside at the following reset and the
 good slot boots. The initramfs tries first the slot
 the loader named (`LoaderEntrySelected`), but the hash decides.
 

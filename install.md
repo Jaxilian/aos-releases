@@ -94,11 +94,16 @@ AOS**:
 3. **Time zone**.
 4. **Disk**: the disk to install onto. The stick you started from is never
    offered. Everything on the chosen disk is erased.
-5. **Install**: "Also encrypt the whole disk", if you want it, locks
-   programs, settings and logs too behind a passphrase asked for at
-   every start, before the desktop; on a machine with a TPM 2.0 the
-   disk opens by itself in that machine and the passphrase is kept as
-   the recovery key. Then a progress bar, then
+5. **Install**: "Encrypt the whole disk" locks programs, settings and
+   logs too. On a machine with a TPM 2.0 it is on to begin with: the
+   disk opens by itself in that machine, and the Done page shows a
+   **disk recovery key**, once, which the start asks for only if the
+   TPM ever cannot open it (the disk in another machine, a firmware
+   change): write it down. If the TPM does not take the key the disk
+   is installed in the clear, and the installer says so (encrypt it
+   later, below). Without a TPM it is off to begin with, and
+   turned on it asks for a passphrase that every start asks for,
+   before the desktop. Then a progress bar, then
    **Restart**. Remove the stick when the machine turns off. If Secure
    Boot was off, the Done page also shows an eight-digit password: the
    next start's blue screen asks for it (Enroll MOK, Continue, Yes, the
@@ -161,7 +166,7 @@ undoes it; the loader menu's (hold Space while the machine starts) "AOS
   previous version of AOS" (it runs `aos-update --rollback`, which needs
   root). Software -> Updates -> "Follow the stable channel" takes only
   releases that have had their time on the newest one. A machine is updated, never reinstalled.
-- **Encrypting later**: a machine installed without "Also encrypt the
+- **Encrypting later**: a machine installed without "Encrypt the
   whole disk" is encrypted in place from the live stick, on mains
   power: `aos-encrypt DISK PASSFILE` on its root console, Ctrl+Alt+F2 (the passphrase on the file's
   first line), keeping everything on it.

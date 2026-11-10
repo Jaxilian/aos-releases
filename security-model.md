@@ -87,8 +87,11 @@ an image with a root key on it (ssh.md).
 **A stolen disk can be made unreadable.** The installer's "Encrypt the
 disk" puts LUKS2 around the aos partition -- homes, programs, settings,
 logs -- unlocked by the account's password at every start, before the
-desktop ([layout.md](layout.md)). It is a choice at install, off by
-default, and one passphrase covers every account on the machine. On a
+desktop ([layout.md](layout.md)). Since round 136 it is on by default
+where a TPM 2.0 takes the key (a fresh install from the live medium onto
+a fixed disk), with a recovery key the installer makes and shows once;
+without a TPM it is a choice at install, off by default, and one
+passphrase covers every account on the machine. On a
 machine with a TPM 2.0 the installer also seals a key to it, so the
 disk opens by itself in its own machine and the passphrase becomes the
 recovery key; with Secure Boot off that protects a disk taken out of
@@ -287,14 +290,20 @@ leave something behind for the next start; the cores cannot be changed
 and the trusted keys are read from the core, and that is the extent of
 it. With Secure Boot off, anyone at the keyboard can edit the boot
 line, boot another medium, and read or change an unencrypted aos
-partition; with it on, the TPM key is bound to PCR 7 only, so a signed
-AOS live medium unseals an installed disk until the key is bound to the
-kernel image too (signed PCR 11 policies). For the releases after the
+partition; with it on, the TPM key opens only in the initramfs of a
+UKI signed with the AOS PCR key (PCR 7 and a signed PCR 11 policy,
+secure-boot.md), not from a live medium, the initramfs' rescue shell
+(the disk suspended, PCR 7 and 11 moved off) nor once the system runs.
+Not being able to start one's own machine counts as the worse failure:
+every TPM step that could strand a person (a rebinding, an extend the
+TPM refuses, a rescue shell) gives way to the recovery key and a shell,
+and the recovery key is letters that type the same on every layout. For the releases after the
 one that removed sudo, the previous root slot still holds it and can be
 chosen at boot by whoever holds the keyboard; it goes when an update
 overwrites that slot. The kernel's surface for a local account is a
 desktop's: user namespaces (the sandbox needs them), /dev/kvm for the
-seat's active account, /dev/net/tun and /dev/fuse for everyone; /proc is
+seat's active account and the accounts an administrator put in the
+`kvm` group, /dev/net/tun and /dev/fuse for everyone; /proc is
 mounted `hidepid=invisible`, so an account sees its own processes only
 (polkitd, in the `proc` group, still sees every caller's; libsystemd's
 cgroup lookups are patched to take the host's root when PID 1 is
@@ -335,8 +344,8 @@ open-weaknesses.md.
    ([secure-boot.md](secure-boot.md)): Fedora's Microsoft-signed shim,
    systemd-boot and a unified kernel image per slot signed with the AOS
    key, enrolled once in the MOK list; every module signed and enforced
-   under Secure Boot. Still open there: lockdown (it refuses
-   hibernation), and a shim of our own so that a lower SBAT generation
+   under Secure Boot, and lockdown in integrity mode there since round
+   136. Still open: a shim of our own so that a lower SBAT generation
    is refused and Fedora's certificate is no longer trusted
    (product-impl.md R4).
 5. **An outside measure.** The CIS benchmark for a Linux desktop run
