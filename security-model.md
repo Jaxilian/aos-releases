@@ -142,7 +142,9 @@ daemon on the system bus with one method per change, each checking its
 own arguments -- there is no "run this command" -- for a member of wheel
 who gave their own password in the last fifteen minutes; every call is
 a line in the journal, and a sandboxed program cannot reach it. A USB stick mounts `nosuid,nodev`, so a
-root-owned setuid shell on one is a file. An owned machine starts
+root-owned setuid shell on one is a file; a FAT or exFAT one, which
+stores no owners, is the seat's active account's alone (0700), as a
+phone is. An owned machine starts
 at a login screen (greetd and ade-greeter) and the session locks before
 sleep; a machine installed for someone else asks for its owner at the
 first boot. The live system's
@@ -303,7 +305,8 @@ chosen at boot by whoever holds the keyboard; it goes when an update
 overwrites that slot. The kernel's surface for a local account is a
 desktop's: user namespaces (the sandbox needs them), /dev/kvm for the
 seat's active account and the accounts an administrator put in the
-`kvm` group, /dev/net/tun and /dev/fuse for everyone; /proc is
+`kvm` group, /dev/net/tun for the seat's active account and the VPN
+services apm runs (group `tun`), /dev/fuse for everyone; /proc is
 mounted `hidepid=invisible`, so an account sees its own processes only
 (polkitd, in the `proc` group, still sees every caller's; libsystemd's
 cgroup lookups are patched to take the host's root when PID 1 is
