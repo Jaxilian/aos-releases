@@ -276,6 +276,37 @@ program cannot reach systemd from its sandbox. A
 package that declares nothing runs as the person, and the store says
 "everything, undeclared".
 
+A workspace (`aos-sandbox --app ORG/NAME --workspace DIR`, 2026-11-11)
+is what a code editor's tools run in: the shell, the compiler, a
+language server, an AI agent. It is the one case where the real home is
+the home: mounted as an overlay whose writes land in
+`~/AppData/ORG.NAME/ws/<hash of DIR>/home`, so a tool that writes
+`~/.cache` or `~/.config` works and the real home is never changed.
+Read-write underneath are the project folder `DIR` (a folder of the
+home that passes the grant rules), each toolchain's own AppData folder
+and one file, `~/.claude/.credentials.json`, so a renewed sign-in is
+not lost. The rest of `~/.claude` and `~/.claude.json` are read from
+the home and written to the overlay like everything else: a hook, a
+setting, a memory or a server list written in a workspace never runs
+outside it (the review of 2026-11-11; before it the folder was bound
+read-write with some names read-only, and a name that did not exist
+yet could be created). ade-portal hands the folder over open
+(`--workspace-fd N`) and it is mounted from that descriptor, so the
+folder that was checked is the folder that is mounted, whatever the
+project does to its name meanwhile. Hidden are
+every other program's AppData folder, `~/.gnupg`, the keyrings,
+`~/.config/aos` (the grants; the theme alone is bound back) and
+`~/.ssh`, of which `known_hosts` and `config` are bound read-only and
+the keys are reached through the agent's socket alone, and only when
+the program itself has `ssh`. All of /opt/apm is read-only, the network
+is the program's own (off with `network = false`), and the podman
+socket is not given. A workspace does not rewrite the program's `view`
+file.
+What it holds: nothing a build script, a test, an extension's command
+or an agent does can change the home, another project, another
+program's data, the shell's start files or the session's autostart.
+`workspace-test.sh` runs the checks on an AOS host.
+
 A drive's SMART (`/run/aos/disks/<drive>.json`, written hourly by the
 root timer aos-disks.timer through smartctl) is readable by every
 account, for the Disks app: health, temperature, hours, the serial
@@ -283,6 +314,28 @@ number; sysfs shows the same serial to everyone already. Nothing an
 account writes reaches a drive through it (2026-10-27).
 
 ## What stays open
+
+A workspace reads the home (dotfiles, the tokens of `gh` and Claude,
+documents) and has the network, so what it runs can send those away;
+it cannot change them. What it may write and is run outside later is a
+way out of it: the project itself (a build script, `.git/hooks`), the
+toolchains' folders (cargo's cache and configuration). The ssh agent
+can be used, not copied, while a workspace of a program with `ssh` is
+open. Claude sessions held in a workspace are not listed outside it.
+
+A workspace can read and replace the Claude sign-in,
+`~/.claude/.credentials.json`, the one file of that folder bound
+read-write. It is so because Claude renews its token while it runs,
+and a renewal kept in the overlay alone would leave the home with a
+token the server has retired: the person would be signed out
+everywhere else. What it costs: a project's code can take the token
+(it can read the home anyway) and can put another account's token in
+its place, so that a later `claude` outside the workspace talks to an
+account that is not the person's. Signing in again undoes it.
+
+A program of another package cannot be started
+from inside one (its launcher needs the person's service manager),
+only the tools in /opt/apm that are plain commands.
 
 Root is nobody's: no account can become root, and aos-rootd does one
 named thing at a time for an administrator who gives their password.
