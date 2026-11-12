@@ -240,10 +240,14 @@ never the home itself, nothing under `AppData`, `.var`, `.config`,
 `.local` or `.cache` (other programs' data and shared settings), never
 `.ssh` or `.gnupg`, a hidden file or folder read-only only, and a path
 that resolves (through a symlink) somewhere that breaks them is refused
-too. SSH is a flag of its own (`;ssh`, `--ssh`): `~/.ssh` read-only,
-`known_hosts` writable over it, and the session's ssh-agent socket
-(`ssh-agent.service`; `ssh-add` once in the Terminal unlocks a key for
-both). Without it the program has no keys and no agent. What a running
+too. SSH is a flag of its own (`;ssh`, `--ssh`): the session's
+ssh-agent socket (`ssh-agent.service`), the person's `~/.ssh/config`,
+public keys (`*.pub`) and `known_hosts` (as `known_hosts2`) read-only,
+and a `known_hosts` of the program's own (of each workspace's own) that
+a first connection is written to. No key file is ever inside: the agent
+signs, and `aos-ssh-keys.service` loads every key that has a `.pub`
+beside it into the agent at login, asking a passphrase once through
+aos-askpass. Without the flag the program has no agent. What a running
 program was given is written at its start to
 `$XDG_RUNTIME_DIR/app/<org>.<name>/view`, for ade-portal.
 
@@ -280,12 +284,22 @@ A workspace (`aos-sandbox --app ORG/NAME --workspace DIR`, 2026-11-11)
 is what a code editor's tools run in: the shell, the compiler, a
 language server, an AI agent. It is the one case where the real home is
 the home: mounted as an overlay whose writes land in
-`~/AppData/ORG.NAME/ws/<hash of DIR>/home`, so a tool that writes
+`~/AppData/.ws/ORG.NAME/<hash of DIR>/home`, so a tool that writes
 `~/.cache` or `~/.config` works and the real home is never changed.
+Everything a workspace keeps is in that folder (`home`, `work`, `cred`,
+`data`, `known_hosts`, `gitconfig`; every level made mode 0700 and
+refused when it is a link), which no sandbox is ever given: an app's
+own folder is `~/AppData/ORG.NAME`, an id starts with a letter or a
+digit (aos-sandbox refuses any other `--app` or `--data`), and nothing
+under `AppData` passes the grant rules. Until 2026-11-12 it was
+`~/AppData/ORG.NAME/ws`, inside the folder bound into the app, under a
+tmpfs: a mount that hides is not a boundary. The old folder is not
+moved over (the app could have changed it) and nothing reads it; its
+`cred` links are removed at the app's next start, the rest goes with
+the app's data.
 Read-write underneath are the project folder `DIR` (a folder of the
-home that passes the grant rules), each toolchain's own AppData folder
-and one file, `~/.claude/.credentials.json`, so a renewed sign-in is
-not lost. The rest of `~/.claude` and `~/.claude.json` are read from
+home that passes the grant rules), each toolchain's declared caches
+and the sign-in files below, so a renewed sign-in is not lost. The rest of `~/.claude` and `~/.claude.json` are read from
 the home and written to the overlay like everything else: a hook, a
 setting, a memory or a server list written in a workspace never runs
 outside it (the review of 2026-11-11; before it the folder was bound
@@ -293,12 +307,65 @@ read-write with some names read-only, and a name that did not exist
 yet could be created). ade-portal hands the folder over open
 (`--workspace-fd N`) and it is mounted from that descriptor, so the
 folder that was checked is the folder that is mounted, whatever the
-project does to its name meanwhile. Hidden are
+project does to its name meanwhile.
+
+A program may be given another package's data: `[sandbox] data =
+["google/android-sdk"]` in its manifest (`--data ORG/NAME`; Software's
+Sees line says "reads and changes the data of ..."). When that package
+is installed, its `~/AppData/<org>.<name>` is bound read-write at its
+own path: Android Studio installs SDK parts, an editor uses the
+assistants' sign-ins and settings (`anthropic/claude-code`,
+`openai/codex`, `xai/grok`, `google/antigravity`). A workspace of that
+program never gets the folder itself: it gets a view, an overlay whose
+writes land in `~/AppData/.ws/ORG.NAME/<hash>/data/<org>.<name>`, so a
+setting or a hook changed by a project's code is not what the Terminal
+runs later. One file is the real one, bound read-write: the sign-in
+(`.credentials.json` of claude-code, `auth.json` of codex and grok),
+through a hard link kept in `cred` so a new file outside is picked up
+at the next start and by aos-wsjoin at the next join. The home's
+`~/.claude/.credentials.json`, `~/.codex/auth.json` and
+`~/.grok/auth.json` are bound the same way while they exist. Which
+packages a workspace gets is what its program was started with
+(`$XDG_RUNTIME_DIR/app/ORG.NAME/data`, written outside the sandbox).
+
+The declaration alone gives nothing: the person allows each package's
+data per program. The answers are
+`~/.config/aos/sandbox/.data/<org>.<name>` (the program's id), one line
+per answered package, `allow org/name` or `deny org/name`; a package
+with no line was not asked. The folder is 0700 and the file 0600,
+written through a temporary file and a rename, and no level of the path
+may be a link. It is outside every sandbox, as the grant file is
+(`~/.config/aos` is not in a program's home and is covered in a
+workspace), and aos-sys never rewrites it. At a start with a package
+not yet asked, aos-sandbox shows the system's dialog before the program
+runs (`ade-portal --ask "Allow APP to use OTHER's data?" "org/app,
+org/other" "APP will be able to read and change OTHER's settings, files
+and sign-in." "Allow" "Don't allow"`, the names from the desktop
+entries when they hold no control or direction characters, else the
+ids): Allow (exit 0) writes `allow`, Don't allow or Escape (exit 1)
+writes `deny`, and a closed dialog, two minutes without an answer, no
+display or no ade-portal write nothing and the program starts without
+the folder. Software's Permissions card has a switch per declared
+package that writes the same file. A workspace never asks: it gets the
+packages its program was started with that are still allowed.
+
+Hidden in a workspace are
 every other program's AppData folder, `~/.gnupg`, the keyrings,
 `~/.config/aos` (the grants; the theme alone is bound back) and
 `~/.ssh`, of which `known_hosts` and `config` are bound read-only and
 the keys are reached through the agent's socket alone, and only when
-the program itself has `ssh`. All of /opt/apm is read-only, the network
+the program itself has `ssh`. A toolchain's folder (a package with
+`[provides] env`: `~/AppData/rust-lang.rustup`) is read-only in every
+sandbox with the tools, its programs and settings with it; only the
+folders its manifest names in `[provides] cache` (apm writes them to
+`/opt/apm/exports/env/<org>.<name>.cache`, a line each) are writable,
+so `cargo build` downloads and `cargo install` cannot replace
+`cargo/bin`. Installs go to the sandbox's own home instead
+(`CARGO_INSTALL_ROOT=~/.local`, npm's prefix, `~/.local/bin` on PATH):
+in a workspace that is its overlay. git finds a fallback identity (the
+account's real name, `<login>@<hostname>`) as its system configuration
+(`GIT_CONFIG_SYSTEM`), which any `git config` of the person's or the
+project's overrides. All of /opt/apm is read-only, the network
 is the program's own (off with `network = false`), and the podman
 socket is not given. A workspace does not rewrite the program's `view`
 file.
@@ -318,14 +385,22 @@ account writes reaches a drive through it (2026-10-27).
 A workspace reads the home (dotfiles, the tokens of `gh` and Claude,
 documents) and has the network, so what it runs can send those away;
 it cannot change them. What it may write and is run outside later is a
-way out of it: the project itself (a build script, `.git/hooks`), the
-toolchains' folders (cargo's cache and configuration). The ssh agent
-can be used, not copied, while a workspace of a program with `ssh` is
-open. Claude sessions held in a workspace are not listed outside it.
+way out of it: the project itself (a build script, `.git/hooks`) and
+the toolchains' declared caches (a crate's unpacked source in cargo's
+registry is compiled by the next build outside: a cache can be
+poisoned). The ssh agent can be used, not copied, while a workspace of
+a program with `ssh` is open: what runs there can sign in to any host
+the keys open for as long as it runs, and cannot take a key with it.
+The person's `~/.ssh/config` is read inside, so a `ProxyCommand`,
+`Match exec` or `LocalCommand` in it runs inside the sandbox, with what
+the sandbox has and not more; a host that needs a file the sandbox
+lacks does not connect there. A program with `data` can change the
+other package's settings and take its sign-in: that is the grant, and
+Software shows it only once the program is installed. Claude sessions held in a workspace are not listed outside it.
 
-A workspace can read and replace the Claude sign-in,
-`~/.claude/.credentials.json`, the one file of that folder bound
-read-write. It is so because Claude renews its token while it runs,
+A workspace can read and replace the assistants' sign-ins
+(`~/.claude/.credentials.json` and its like, above), the one file of
+each folder bound read-write. It is so because Claude renews its token while it runs,
 and a renewal kept in the overlay alone would leave the home with a
 token the server has retired: the person would be signed out
 everywhere else. What it costs: a project's code can take the token
@@ -412,3 +487,12 @@ open-weaknesses.md.
 
 [../../SECURITY.md](SECURITY.md): the address, the window, and
 what an alpha promises.
+
+A workspace also hides the common credential stores of the home when
+they exist: the folders .aws, .azure, .docker, .kube, .config/gh,
+.config/gcloud, .config/op, .password-store, .mozilla, .thunderbird,
+.config/chromium, .config/google-chrome, .config/BraveSoftware (an empty
+folder in their place), and the files .netrc, .git-credentials, .npmrc,
+.pypirc, .config/git/credentials, .bash_history (an empty file of the
+workspace's own). The rest of the home stays readable in a workspace:
+this is a list of what is known to hold secrets, not a boundary.
