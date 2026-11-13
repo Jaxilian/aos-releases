@@ -211,7 +211,15 @@ runs in a Landlock domain scoped against abstract unix sockets made
 outside it (`/usr/libexec/aos-landlock`, Landlock ABI 6): a program
 reaches the abstract sockets its own sandbox made and no others.
 XWayland asks for no cookie; it serves its own uid and refuses
-another account's. A program
+another account's. Removable drives and phones (`/run/media`) are
+inside only with `media = true`, `;media`, `--media` (since round 146;
+every sandbox had them before), and Software's switch "Removable
+drives and phones" sets it per program. Without it, a file on a stick
+picked in the file dialog or opened with the program reaches it
+through the document portal, as a home file outside its view does
+(aos-sys `sandbox::sees` takes the `;media` of the program's `view`);
+a folder on a stick cannot be given. A workspace has the drives only
+when its program was started with them. A program
 started from the desktop (`--launch`) keeps its sandbox, and with it
 everything the sandbox was given -- the microphone, the camera, the
 folders, the D-Bus proxy -- while any process of it lives that is not
@@ -374,6 +382,102 @@ or an agent does can change the home, another project, another
 program's data, the shell's start files or the session's autostart.
 `workspace-test.sh` runs the checks on an AOS host.
 
+A remote folder (`org.aos.Workspace` version 3, 2026-11-12) is a folder
+of another machine that a program with `workspace = true` and `ssh`
+opens through the portal: `Remote(host, path)` returns a local folder,
+`Unmount(dir)` gives it back. ade-portal, outside every sandbox, runs
+`sshfs -f host:path` as a child of its own, with the session's
+ssh-agent and the person's `~/.ssh/config` (`BatchMode=yes`, so nothing
+is ever asked on a terminal; `PermitLocalCommand=no`, `reconnect`,
+`ServerAliveInterval=15`, `StrictHostKeyChecking=accept-new`), and
+mounts it at
+`$XDG_RUNTIME_DIR/aos-remote/<org>.<name>/<host>/<hash of host:path>`.
+The host is `[A-Za-z0-9._@-]` with at most one `@`, never starting with
+`-` or `.`, kept in lower case after the `@`; the path is absolute,
+without control characters, `,` or `\`.
+
+Because that ssh runs as the person, its settings are read first
+(`~/.ssh/config` and what it includes, four levels and 32 files at
+most), and the mount is refused with the reason when an `Include`
+names or resolves to a file outside `~/.ssh` and `/etc/ssh`, when the
+settings themselves are in a folder the program can change, or when a
+`ProxyCommand`, `KnownHostsCommand`, `LocalCommand` or `Match exec`
+names a path in one: its read-write grants, `~/AppData/<org>.<name>`,
+its workspaces' folder and its runtime folder. A host key met for the
+first time is written to
+`~/.config/aos/sandbox/.known/<org>.<name>`, never to the person's
+`known_hosts`, which is read beside it.
+
+aos-sandbox binds `$XDG_RUNTIME_DIR/aos-remote/<org>.<name>` at the
+same path into a program started with `--workspace-portal` and remounts
+that one mount point read-only: a mount the portal makes later appears
+inside the running program, since the bind is a slave of the session's
+runtime directory as `/run/media` is of `/run`, each remote folder
+stays read-write, and nothing inside can make, rename or replace a
+mount point (the tree is the portal's alone, mode 0700). A workspace
+opened on a remote folder gets that one mount and no other: what runs
+for one host's project cannot read or write another host's. The place
+both are bound at is a fresh tmpfs over `aos-remote` in the program's
+own runtime folder, so nothing the program left below it is on the way;
+a link at `aos-remote` itself is removed first.
+
+The first `Remote()` of a program to a host asks the person ("Allow X
+to open folders on HOST over SSH? It will use your SSH keys there."),
+and the answer is kept as a line `allow ssh:HOST` or `deny ssh:HOST` in
+`~/.config/aos/sandbox/.data/<org>.<name>`, beside the data answers,
+whose readers skip it. `Check`, `Spawn` and `ShipDev` take a remote
+folder (or a folder inside one) as a project; ShipDev's question shows
+it as `host:path`. Nothing the portal does in a remote folder runs on
+its bus thread: it looks through one helper thread per mount with a
+three second limit, and while that thread waits on a host that stopped
+answering every further look is refused at once, so a stalled host
+costs one thread, not one per call; a workspace is not started on a
+folder that does not answer. aos-sandbox accepts a `--workspace` under
+`$XDG_RUNTIME_DIR/aos-remote/<org>.<name>` only when the portal's list,
+`$XDG_RUNTIME_DIR/aos-remote/.mounts/<org>.<name>`, names it or a
+folder above it; it is the one workspace folder outside the home.
+
+A remote folder ends with `Unmount` (at once, or when the last process
+of a workspace there has ended), two seconds after the last caller
+that asked for it left the bus, when its sshfs ends, when the portal
+ends (a helper that waits on a pipe the portal holds) and at the
+portal's next start: `fusermount3 -u -z`, then the sshfs child and its
+ssh are killed, so no connection outlives the folder even while a
+program still holds a file in it. A program has sixteen at most.
+
+A workspace with a Wayland display has `GIT_ASKPASS` and `SSH_ASKPASS`
+set to `/usr/bin/aos-askpass`, so git over https and an ssh without a
+terminal ask in a window; what is typed goes to the tool that asked,
+inside the workspace.
+
+aos-sandbox mounts a program's sockets, shares and grants at places
+inside three folders the program writes: `~/AppData/<org>.<name>` (its
+home), `$XDG_RUNTIME_DIR/app/<org>.<name>/run` and `.../tmp` (its
+runtime folder and /tmp, shared by its instances), and for a workspace
+the upper layer `~/AppData/.ws/<org>.<name>/<hash>/home`. bubblewrap
+0.11.2 resolves a mount's destination under `/newroot` while the host
+is still mounted beside it at `/oldroot`, following links: a link the
+program left at or above a destination, pointing to `/oldroot/...` or
+`../../oldroot/...`, made the next start create empty folders and
+files anywhere the person may write (a link above the destination, or a
+dangling link where a file is bound), or put the mount where the
+sandbox never sees it (a link to an existing folder). A link to
+anywhere else, and a dangling link where a folder is bound, only made
+bwrap fail. Since 2026-11-12 every such destination is walked on the
+host side, component by component from the folder's root, before bwrap
+runs (`dest_check`: the grants and shares, a share inside another
+share through the granted folder itself, `.config/aos/theme`, the
+`.ssh` files, the toolchain and `--data` folders under `AppData/`, a
+package of `~/.apm`, the ssh agent's socket, the Wayland, PipeWire,
+PulseAudio, accessibility, D-Bus, podman and document places,
+`/tmp/.X11-unix`, and in a workspace the hidden folders and files, the
+credentials and the project). A link at any component stops the start
+with exit 64 and a message that names the link; nothing is made
+outside. `pulse` and `aos-remote` in the runtime folder are a fresh
+tmpfs each, with the socket and the remote folders bound into it.
+sandbox-tools-test.sh plants a link at each kind and looks for what
+was made outside.
+
 A drive's SMART (`/run/aos/disks/<drive>.json`, written hourly by the
 root timer aos-disks.timer through smartctl) is readable by every
 account, for the Disks app: health, temperature, hours, the serial
@@ -394,7 +498,20 @@ the keys open for as long as it runs, and cannot take a key with it.
 The person's `~/.ssh/config` is read inside, so a `ProxyCommand`,
 `Match exec` or `LocalCommand` in it runs inside the sandbox, with what
 the sandbox has and not more; a host that needs a file the sandbox
-lacks does not connect there. A program with `data` can change the
+lacks does not connect there. For a remote folder the portal runs
+ssh outside every sandbox, so the person's own settings run as the
+person, to a host the person allowed; the check above reads paths, not
+what a command does, so a command built from variables, or one found
+through a `PATH` the program can write, is not seen. What a program or
+its workspaces write to a remote folder is run by that machine later,
+as there. A host can stop answering for as long as it likes while
+keeping the connection alive: a program that reads its folder then
+waits until the folder is unmounted, a sandbox starting on it (the
+program itself, started again while such a folder is mounted) waits
+with it, and a ShipDev copying from it holds that program's one build.
+The password window a workspace's git or ssh opens shows the text the
+tool gives it: what runs in a workspace can ask for any password in a
+window that looks like the system's. A program with `data` can change the
 other package's settings and take its sign-in: that is the grant, and
 Software shows it only once the program is installed. Claude sessions held in a workspace are not listed outside it.
 
@@ -442,6 +559,26 @@ hidden, br2ext/patches/systemd/0002). Official
 package hooks run as a restricted root under systemd-run when apm
 installs system-wide. The full list, with what would close each:
 open-weaknesses.md.
+
+The walk for links at a sandbox's mount destinations (above) is a
+check before bwrap runs, not part of the mount: an instance of the
+program that is running meanwhile can put a link in after the check,
+and bwrap then follows it and makes the empty folder or file outside,
+as before. It cannot do so at a place that is a mount point in its own
+sandbox (the kernel refuses to rename or remove one, and a nested
+namespace cannot bind around it), so what is left is a destination the
+running instance does not have (a grant the person just added, a
+permission switched on between two starts) and one below a plain
+folder of the program's (`.config/aos/theme`, `.ssh/*.pub`,
+`AppData/<org>.<name>`, a share two levels deep): those folders hold
+the program's own files and cannot be a tmpfs. What it gains is an
+empty file or folder owned by the person, never content and never a
+mount the host sees. A workspace that is running is joined, not
+mounted again, so it has no such race. Closing it takes a mount that
+does not follow links, which bwrap has no option for: a helper that
+opens each destination with `openat2(RESOLVE_NO_SYMLINKS)` and mounts
+on the descriptor, or the sandbox built inside an outer bwrap whose
+view of the host is read-only except for what the program is given.
 
 ## What is next, in order
 
