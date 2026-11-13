@@ -239,7 +239,7 @@ keymap is wrong; it is shown in groups of eight and typed without the
 spaces.
 
 **The PCR key.** `aos-pcr.key` (RSA 2048, mode 600) and `aos-pcr.pem`
-(its public half) beside the Secure Boot key in `~/.config/aos-sb`
+(its public half) beside the Secure Boot key in `~/AppData/aos.release/sb`
 (`$AOS_SB_KEYS`), never in git or the image. post-build.sh copies the
 `.pem` into the core as `/usr/lib/systemd/tpm2-pcr-public-key.pem`;
 post-image.sh signs with the key and refuses a target whose public key
@@ -255,7 +255,7 @@ never ship and leave every sealed disk at its passphrase. Without the
 key the build binds to PCR 7 alone. Made once, on the build host:
 
 ```sh
-cd ~/.config/aos-sb && umask 077
+cd ~/AppData/aos.release/sb && umask 077
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out aos-pcr.key
 openssl pkey -in aos-pcr.key -pubout -out aos-pcr.pem
 ```
@@ -350,7 +350,9 @@ with the AOS keys. What it does not:
 
 Three files sign everything, one certificate is built into the shim,
 and none of them is in git. They live on the build host in
-`~/.config/aos-sb/` (or `$AOS_SB_KEYS`), directory 700:
+`~/AppData/aos.release/sb/` (or `$AOS_SB_KEYS`), directory 700; until
+0.4.77 it was `~/.config/aos-sb`, where sb.sh still finds the keys and
+says to move them:
 
 | File | What | Where it goes |
 |---|---|---|
@@ -402,7 +404,7 @@ chmod 644 aos-root.crt aos-root.cer aos-sb.crt aos-sb.cer
 ```
 
 To the build host go `aos-root.crt`, `aos-root.cer`, `aos-sb.key`,
-`aos-sb.crt`, `aos-sb.cer` (into `~/.config/aos-sb/`); `aos-root.key`
+`aos-sb.crt`, `aos-sb.cer` (into `~/AppData/aos.release/sb/`); `aos-root.key`
 stays offline, two copies (an encrypted stick in a drawer, and
 another drawer). RSA 2048 is what shim, MokManager and every
 distribution's MOK use; shim does not check validity dates.

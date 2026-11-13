@@ -468,7 +468,7 @@ host side, component by component from the folder's root, before bwrap
 runs (`dest_check`: the grants and shares, a share inside another
 share through the granted folder itself, `.config/aos/theme`, the
 `.ssh` files, the toolchain and `--data` folders under `AppData/`, a
-package of `~/.apm`, the ssh agent's socket, the Wayland, PipeWire,
+package of `~/AppData/aos.apm`, the ssh agent's socket, the Wayland, PipeWire,
 PulseAudio, accessibility, D-Bus, podman and document places,
 `/tmp/.X11-unix`, and in a workspace the hidden folders and files, the
 credentials and the project). A link at any component stops the start
