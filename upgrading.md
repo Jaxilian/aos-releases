@@ -111,8 +111,12 @@ aos-update --rollback  # the other slot -- what ran before -- boots at the next 
 whole machine, the way a distribution's upgrade does; the OS part is
 skipped where there is no `aos-update` (a developer's machine, the live
 ISO). A package that fails -- a third-party recipe that will not build,
-say -- is reported and skipped, the rest are installed, and the OS update
-still runs; apm then exits 1 with "N package(s) failed".
+say -- is reported and skipped together with every package that depends
+on it, the rest are installed as one transaction, and the OS update
+still runs; apm then exits 1 with "N package(s) failed". Since 0.4.85
+a transaction lands whole or not at all: apm journals it in
+`/opt/apm/state/journal/txn`, and after a power loss `apm recover`
+(aos-apm-recover.service, early at boot) puts back what it had changed.
 
 An update interrupted at any point -- the power, the lid, Settings
 closed -- leaves the machine booting what it runs now: the idle slot's

@@ -194,7 +194,14 @@ microphone unless its package declares them or the person switches them
 on; sound still plays. The discrete GPU (`gpu = true`, `;gpu`, `--gpu`)
 lifts the Mesa-only driver lists inside the sandbox and sets NVIDIA
 render offload, as `prime-run` does: games declare it, everything else
-stays on the integrated GPU so the discrete one can sleep. X11
+stays on the integrated GPU so the discrete one can sleep. The
+developer tools (`tools = true`, `;tools`, `--tools`) bring the NVIDIA
+GPU's compute nodes without that offload (/dev/nvidiactl,
+/dev/nvidia<N> and /dev/nvidia-uvm; not nvidia-modeset, not the
+profilers' nvidia-uvm-tools, not its DRM nodes): CUDA and `nvidia-smi`
+work in an editor's terminal as in a shell, while the editor still
+draws on the integrated GPU and opens none of them (VS Code checked,
+2026-11-17; DECISIONS.md). X11
 (`x11 = true`, `;x11`, `--x11`) gives the program the socket of the
 session's XWayland, the one `DISPLAY` names and only when it is the
 person's own (`/tmp/.X11-unix/X<n>`), and `DISPLAY`: every X11 client can
@@ -210,6 +217,17 @@ XWayland and gamescope's open the path socket only, and every sandbox
 runs in a Landlock domain scoped against abstract unix sockets made
 outside it (`/usr/libexec/aos-landlock`, Landlock ABI 6): a program
 reaches the abstract sockets its own sandbox made and no others.
+The compositor's socket is not in a sandbox either: since 0.4.85
+`ade-ctx` makes each sandbox a socket of its own through
+`wp_security_context_v1`, tagged with the app's id, and ade-comp
+refuses a client of such a socket every privileged protocol (the
+session lock, the input method, layer-shell, screencopy, adopting
+another program's window, a security context of its own) whatever
+program it runs; until then the compositor trusted a client by its
+executable, and /usr and a writable /tmp are inside every sandbox.
+aos-sandbox does not start a program when ade-ctx fails (exit 69).
+Its activation token focuses only with its own latest input, and a
+new window takes the keyboard only when it earned it (ade act.rs).
 XWayland asks for no cookie; it serves its own uid and refuses
 another account's. Removable drives and phones (`/run/media`) are
 inside only with `media = true`, `;media`, `--media` (since round 146;
@@ -486,6 +504,27 @@ account writes reaches a drive through it (2026-10-27).
 
 ## What stays open
 
+The login screen's picture asked for by a sandboxed program (Images'
+Set as Login Screen Wallpaper) goes to ade-portal's
+`org.aos.LoginWallpaper` on the session bus. A sandboxed program cannot
+own that name (apm and aos-sandbox refuse org.aos.*), but a process
+outside every sandbox can own it first and draw its own password
+question, as it can draw any window that asks for the password: the
+same class as the fake Unlock bar of open-weaknesses.md, accepted
+(2026-11-17, the review of round 155). What it cannot do is the change itself: the picture still
+reaches aos-rootd only with the administrator's password.
+
+GPU memory is charged to no cgroup. On the G14's xe (and i915, and
+amdgpu's GTT) a buffer object's pages are system RAM that memcg does
+not count, so any program given the GPU can pin memory past its
+MemoryMax. The animated wallpaper's decoder, ade-wallvid, is the one
+GPU process that parses untrusted files: it runs in bwrap with no
+network and no home, a seccomp filter loaded before it reads the file,
+format and codec whitelists, and a 256 MiB GPU budget the shell reads
+from fdinfo and /proc/<pid>/maps. A decoder taken over by an exploit
+can still dodge that budget with a one-page mapping of a large buffer
+or a closed GEM handle (accepted 2026-11-17, TODO I23).
+
 A workspace reads the home (dotfiles, the tokens of `gh` and Claude,
 documents) and has the network, so what it runs can send those away;
 it cannot change them. What it may write and is run outside later is a
@@ -561,24 +600,15 @@ installs system-wide. The full list, with what would close each:
 open-weaknesses.md.
 
 The walk for links at a sandbox's mount destinations (above) is a
-check before bwrap runs, not part of the mount: an instance of the
-program that is running meanwhile can put a link in after the check,
-and bwrap then follows it and makes the empty folder or file outside,
-as before. It cannot do so at a place that is a mount point in its own
-sandbox (the kernel refuses to rename or remove one, and a nested
-namespace cannot bind around it), so what is left is a destination the
-running instance does not have (a grant the person just added, a
-permission switched on between two starts) and one below a plain
-folder of the program's (`.config/aos/theme`, `.ssh/*.pub`,
-`AppData/<org>.<name>`, a share two levels deep): those folders hold
-the program's own files and cannot be a tmpfs. What it gains is an
-empty file or folder owned by the person, never content and never a
-mount the host sees. A workspace that is running is joined, not
-mounted again, so it has no such race. Closing it takes a mount that
-does not follow links, which bwrap has no option for: a helper that
-opens each destination with `openat2(RESOLVE_NO_SYMLINKS)` and mounts
-on the descriptor, or the sandbox built inside an outer bwrap whose
-view of the host is read-only except for what the program is given.
+check before bwrap runs, and an instance running meanwhile could put a
+link in after it: bwrap then followed it and made an empty folder or
+file outside the sandbox (TODO I21 until round 155). Since 0.4.85 bwrap
+runs inside `aos-roview` (aos-landlock v3): a user and mount namespace
+of its own in which the whole host is read-only except the folders the
+program is given read-write, cloned and put back writable before bwrap
+starts. A link swapped in after the walk now leads bwrap only into a
+folder the program already writes, and every other place refuses the
+write. aos-sandbox does not start a program without it (exit 69).
 
 ## What is next, in order
 

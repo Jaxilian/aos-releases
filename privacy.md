@@ -3,14 +3,15 @@
 What the Adelon Operating System sends off the machine, to whom, and
 why, written the way the GDPR asks of a Swedish company. The rule
 (policies.md, "No telemetry"): AOS sends nothing about the machine on
-its own. The list below is everything; a release that added to it
+its own but the anonymous crash summary of item 3, which Settings ->
+Privacy turns off. The list below is everything; a release that added to it
 without a line here would be a bug.
 
 **Controller:** Adelon AB (to be formed; until then Jax Carls, who owns
 AOS). **Contact:** to be decided -- until then the security address in
 security-policy.md. **Legal basis:** the legitimate interest of keeping
-the system updated and secure (items 1, 2, 5), and your consent or
-explicit request (items 3, 4). **Your rights:** access, correction and
+the system updated and secure (items 1, 2, 5, and item 3's crash
+summary), and your explicit request (item 3's full report, item 4). **Your rights:** access, correction and
 erasure under the GDPR; for a report, quote the report id Settings
 showed when it was sent.
 
@@ -44,9 +45,19 @@ report" page quote this page; the two have to match.
 | What | Only when a person sends one: "Send a report" in Settings, the first-boot setup's consent page, or `aos-report --send` at a terminal. The archive holds the state of the machine, not the person's files: the AOS version and build, the kernel, the hardware and its drivers (`lspci`, `lsusb`, DMI), this boot's system log and the previous boot's warnings, failed services, start-up times, the programs using the most memory, the desktop's log and which programs crashed (no memory dumps), sound and Bluetooth state with the names of paired devices, disks, mounts, network status (addresses, no Wi-Fi passwords), what Software has installed and its sources. With `--hwcheck`, the hardware check's results (`aos-hwcheck`'s JSON: the DMI model, firmware, each check's pass, fail or skip). With `--steam`, Steam's own logs from the home folder -- the one thing from it, opted into separately. `aos-report --what` prints the same list on the machine. Lines that look like passwords, pre-shared keys, private keys or tokens are blanked before the archive is made; a log can still name files, networks or sites a program wrote about, so a report is personal data. |
 | Sent with it | The person's note, the AOS version, and an anonymous machine number: the first 16 hex digits of sha256("aos-report:" + the machine id), so one machine's reports group without the machine id itself leaving. |
 | Where | The `REPORT_URL` of the build (`/usr/lib/aos/report.conf`, or `/etc/aos/report.conf`); https only. The public builds carry no URL yet: until a receiver exists, nothing can be sent at all and Settings shows no Send button; it shows "Report a problem", which opens issues.adelon.eu in the browser (nothing is sent by that). |
-| Consent | A standing consent is the file `/etc/aos/report-consent`, written by the first-boot setup's toggle (off by default) or Settings → About, and removed when the toggle goes off. Without it `aos-report --send` refuses, unless the command carries `--i-asked`: the person's explicit command for this one report (Settings' "Send a report now" passes it; so can a person at a terminal). Nothing is ever sent by a timer or a service. |
+| Consent | Each report is the person's own command: `aos-report --send` refuses without `--i-asked`, which Settings' Send, the first-boot toggle and the recovery screen's "Send a report" pass, and so can a person at a terminal. There is no standing consent; `/etc/aos/report-consent` is no longer read. |
 | Recipient | Adelon (the receiver in `br2ext/report-server/`, run by us). The server stores the archive and its metadata under the day's date and the report id; it stores no IP address (the rate limit's counts live in memory only). |
 | Retention | To be decided; the rule until then: as long as the bug it describes needs, and the directory readable by the developers only. Erasure on request by report id. |
+
+**The crash summary** (DECISIONS 2026-11-17, "Diagnostics in two levels"):
+
+| | |
+|---|---|
+| What | When a program of the system (`/usr/bin`, `/usr/lib`, `/usr/libexec`) or of a package from the published AOS or third-party index crashes with SIGSEGV, SIGABRT, SIGBUS, SIGILL, SIGFPE, SIGTRAP or SIGSYS, `aos-crash-summary.timer` (five minutes after boot, then every 15) sends one summary of it by itself, once per crash and signature. On by default; Settings -> Privacy, "Send an anonymous crash summary", writes `/etc/aos/crash-summary-off` to stop it. A machine set up before the summary existed keeps it off unless its owner had consented to reports (`/etc/aos/report-consent`): `aos-crash-summary-migrate.service` writes the opt-out once. `/usr/libexec/aos-crash-summary --print` shows on the machine what this boot's would be. |
+| Data sent | The AOS version, the computer's model (DMI vendor and product), the program's file name (or org/name:file and the package's version), the signal, up to 16 stack frames as function, module file name and offset (`n/a` for a module that is not the system's or a published package's, such as a library of your own), and a signature hashed from program, signal and frames. No machine number, host name, user name, path, command line, environment, memory or log. A program elsewhere (a home folder, /tmp, /usr/local, a container, a private or local apm package) is not summarised. The program's command line, environment, working directory and host name are not even read from the journal. Your IP address reaches the server with the connection. |
+| Where | The `SUMMARY_URL` of the build (`report.conf`, as above); empty on the public builds until the receiver runs, and nothing is sent while it is. |
+| Recipient | Adelon, the same receiver. It keeps the summary under the day's date, with no time of day and no address on disk or in its log. |
+| Retention | As the full report's. A summary names no person or machine, so it cannot be found again by one. |
 
 ## 4. Firmware updates (fwupd, LVFS)
 

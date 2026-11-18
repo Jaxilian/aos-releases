@@ -34,13 +34,16 @@ fix versus upstream's.
 
 ## No telemetry
 
-AOS sends nothing anywhere on its own. No usage reports, no crash reports,
-no update pings beyond the package index fetch that `apm update` makes
-when you or the Settings application ask for one, and no identifier that
-would let a server tell one machine from another. The diagnostics bundle
-that `aos-report` writes stays on the machine unless a person sends it:
-Settings' "Send a report", or the first-boot consent toggle, off by
-default ([privacy.md](privacy.md) lists everything that leaves a machine). This is true of the image today and it is a promise for every
+AOS sends nothing anywhere on its own but an anonymous crash summary (the
+AOS version, the computer's model, the program, the signal and where it
+stopped; DECISIONS 2026-11-17), which Settings -> Privacy turns off. No
+usage reports, no update pings beyond the package index fetch that `apm
+update` makes when you or the Settings application ask for one, and no
+identifier that would let a server tell one machine from another. The
+diagnostics bundle that `aos-report` writes stays on the machine unless a
+person sends it: Settings' "Send a report", or the first-boot consent
+toggle, off by default ([privacy.md](privacy.md) lists everything that
+leaves a machine). This is true of the image today and it is a promise for every
 release: a change that broke it would be a bug, and it would be reverted.
 
 Three things on the image talk to a server on their own, and none of
