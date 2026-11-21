@@ -79,10 +79,11 @@ A tampered download, mirror or publisher is a refused download.
 **The network is closed.** nftables drops everything inbound that is
 not a reply, except DHCP, ICMP and port 22. Nothing listens on 22
 unless the person turns remote login on in Settings -> Network, with a
-key and never a password; while it is on, the bar shows **SSH open** in
-red in the middle of the screen, so a door opened for a reason is not
-forgotten. A published image carries nobody's key: `release.sh` refuses
-an image with a root key on it (ssh.md).
+key and never a password; while it is on, the bar shows a yellow
+**SSH** at its right with the microphone and camera indicators (a click
+says "SSH is open"), so a door opened for a reason is not forgotten. A
+published image carries nobody's key: `release.sh` refuses an image
+with a root key on it (ssh.md).
 
 **A stolen disk can be made unreadable.** The installer's "Encrypt the
 disk" puts LUKS2 around the aos partition -- homes, programs, settings,
