@@ -102,6 +102,19 @@ keep through libsecret -- live in the Secret Service's keyring in the
 home, encrypted with the login password that PAM hands it at login,
 so they are as safe as the home and nothing asks a second password.
 
+**The Adelon account is ade-portal's.** The sign-in of adelon.io (the
+refresh token, the address, the unlocked mail key) is kept in the same
+keyring by `ade-portal --account`, which serves `org.aos.Account` on the
+session bus and hands out short-lived access tokens. Settings signs in
+and out and lists and changes what each app may do; it is known by its
+program, `/usr/bin/settings` in the read-only core, run in the portal's
+own mount and user namespaces. A sandboxed program reaches the service
+only when its manifest declares `[sandbox] account = [...]`
+(aos-sandbox `--account-portal`), and only after the person allowed it
+once; the grants are kept per app id and per Adelon address in
+`~/AppData/aos.desktop/data/ade/account.grants`. Any other program
+outside a sandbox is refused (2026-11-23).
+
 **The screen is shown only to the screen-sharing portal.** The
 compositor offers screen capture (wlr-screencopy) to one program, the
 portal's backend at /usr/libexec/xdg-desktop-portal-wlr, checked by
@@ -504,6 +517,16 @@ number; sysfs shows the same serial to everyone already. Nothing an
 account writes reaches a drive through it (2026-10-27).
 
 ## What stays open
+
+**Unsandboxed programs of the person are trusted with the Adelon
+account.** The account service tells Settings from other unsandboxed
+programs by its executable and namespaces, but a program outside every
+sandbox, running as the person, can start `/usr/bin/settings` itself
+(fork, then exec, then drive it, or with `LD_PRELOAD` or ptrace) and
+so speak as Settings. That is accepted rather than defended: such a
+program can read the login keyring, where the sign-in lives, without
+the service at all. The defence is the sandbox, which every app from
+Software runs in.
 
 The login screen's picture asked for by a sandboxed program (Images'
 Set as Login Screen Wallpaper) goes to ade-portal's

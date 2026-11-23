@@ -6,7 +6,7 @@ beside every release, Buildroot's `pkg-stats` against NVD) and what was
 done about each entry. A release is refused until every reported CVE
 has a row (`release.sh`). docs/security-policy.md is the cadence.
 
-253 rows: 75 fixed, 176 not applicable, 2 open.
+260 rows: 80 fixed, 178 not applicable, 2 open.
 
 ## Open
 
@@ -19,6 +19,11 @@ has a row (`release.sh`). docs/security-policy.md is the cadence.
 
 | Package | CVE | In | Advisory | Why it mattered |
 |---|---|---|---|---|
+| ffmpeg | CVE-2026-125064 | 0.4.91 |  | a crafted AVI with an oversized G.726 audio chunk makes g726_decode_frame() read a NULL bit buffer, a crash of the decoding program (CVSS 5.5, local, the person opens the file; on AOS the sandboxed Videos app); fixed by upstream commit ec887b13 (PR 25704, init_get_bits8() checked) carried as br2ext/patches/ffmpeg/0005 on 8.1.3 |
+| ffmpeg | CVE-2026-125068 | 0.4.91 |  | a crafted Bink file with a frame of about 2^28 bytes makes the Bink decoder read a NULL bit buffer, a crash of the decoding program (CVSS 5.5, local, the person opens the file; on AOS the sandboxed Videos app); fixed by upstream commit 5195d6f9 (PR 25704, init_get_bits8() checked) carried as br2ext/patches/ffmpeg/0006 on 8.1.3 |
+| ffmpeg | CVE-2026-125065 | 0.4.91 |  | a crafted EA file with an oversized fVGT inter frame makes tgv_decode_inter() read a NULL bit buffer, a crash of the decoding program (CVSS 5.5, local, the person opens the file; on AOS the sandboxed Videos app); fixed by upstream commit 9691e4fd (PR 25704, init_get_bits8() checked) carried as br2ext/patches/ffmpeg/0007 on 8.1.3 |
+| ffmpeg | CVE-2026-125066 | 0.4.91 |  | a crafted AVI with a 2^28-byte CLJR frame makes the Cirrus Logic AccuPak decoder read a NULL bit buffer, a crash of the decoding program (CVSS 5.5, local, the person opens the file; on AOS the sandboxed Videos app); fixed by upstream commit d40c1b12 (PR 25704, init_get_bits8() checked) carried as br2ext/patches/ffmpeg/0008 on 8.1.3 |
+| ffmpeg | CVE-2026-125067 | 0.4.91 |  | a crafted AVI with an oversized VBLE frame makes vble_decode_frame() read a NULL bit buffer, a crash of the decoding program (CVSS 5.5, local, the person opens the file; on AOS the sandboxed Videos app); fixed by upstream commit 1206df65 (PR 25704, init_get_bits8() checked) carried as br2ext/patches/ffmpeg/0009 on 8.1.3 |
 | libzlib | CVE-2026-76844 | 0.4.78 |  | the same gz_write() fault and the same fixing change as CVE-2026-85091 (Debian's tracker and DSA-6613-1); carried as br2ext/patches/libzlib/0001 on 1.3.2 |
 | libzlib | CVE-2026-85091 | 0.4.78 |  | after a failed write() gz_write() leaves strm.next_in at the caller's buffer and a later gz* write call writes past a heap allocation (any program that keeps writing a gzFile after a write error such as EPIPE); fixed by upstream commit df84af25 (1.4), from Debian's 1:1.3.dfsg+really1.3.2-4, carried as br2ext/patches/libzlib/0001 on 1.3.2 |
 | freetype | CVE-2026-50811 | 0.4.78 |  | TT_Get_Var_Design(), behind FT_Get_Var_Design_Coordinates, reads past the font's axis array when asked for more coordinates than the font has axes (since 2.14.0; a crafted variable font in a program that asks for design coordinates); fixed by upstream commits 8fa928f1 and 5a280ecd (2.15.0), from Debian's 2.14.3+dfsg-3, carried as br2ext/patches/freetype/0001 on 2.14.3 |
@@ -153,6 +158,8 @@ Ignored in the report through `security/ignore.mk`; reviewed again when the pack
 | ffmpeg | CVE-2026-107660 | tls_mbedtls not built (AOS ffmpeg uses gnutls, CONFIG_MBEDTLS 0); reviewed at 8.1.3 (2026-11-11): the reason still holds |
 | ffmpeg | CVE-2026-107675 | libssh sftp protocol not built (CONFIG_LIBSSH 0); reviewed at 8.1.3 (2026-11-11): the reason still holds |
 | ffmpeg | CVE-2026-107698 | already fixed in ffmpeg 6.1.5 (avformat/rtsp explicit protocol check backport); NVD's range is wrong; reviewed at 8.1.3 (2026-11-11): the reason still holds |
+| ffmpeg | CVE-2026-125172 | an out-of-bounds read in libxevd_receive_frame() (EVC through libxevd); AOS builds ffmpeg without libxevd (CONFIG_LIBXEVD 0 in output3's 8.1.3 build, no libxevd package), so libavcodec/libxevd.c is not compiled |
+| ffmpeg | CVE-2026-125173 | a memory leak in libxevd_receive_frame() (EVC through libxevd); AOS builds ffmpeg without libxevd (CONFIG_LIBXEVD 0 in output3's 8.1.3 build, no libxevd package), so libavcodec/libxevd.c is not compiled |
 | ffmpeg | CVE-2026-30754 | already fixed in ffmpeg 6.1.4 (rtpenc_h264_hevc nal_length_size check backport); NVD's range is wrong; reviewed at 8.1.3 (2026-11-11): the reason still holds |
 | ffmpeg | CVE-2026-30997 | already fixed in ffmpeg 6.1.5 (av1dec primary_ref_frame range check is the n6.1.5 tag commit); NVD's range is wrong; reviewed at 8.1.3 (2026-11-11): the reason still holds |
 | ffmpeg | CVE-2026-30998 | tools/zmqsend not built (CONFIG_LIBZMQ 0); Debian marks the CVE bogus; reviewed at 8.1.3 (2026-11-11): the reason still holds |
