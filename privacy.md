@@ -22,7 +22,7 @@ report" page quote this page; the two have to match.
 
 | | |
 |---|---|
-| What | Two minutes after boot and then daily (`aos-update-check.timer`), and when a person presses "Look for updates" in Software, `aos-update-check` runs `apm update` (item 2) and `aos-update --check`, which fetches `SHA256SUMS` and `SHA256SUMS.minisig` from the release channel to see whether a newer AOS exists. Nothing is installed without the person. |
+| What | Two minutes after boot and then daily (`aos-update-check.timer`), and when a person presses "Look for updates" in Store, `aos-update-check` runs `apm update` (item 2) and `aos-update --check`, which fetches `SHA256SUMS` and `SHA256SUMS.minisig` from the release channel to see whether a newer AOS exists. Nothing is installed without the person. |
 | Where | `https://github.com/Jaxilian/apm-recipes/releases/download/index/` (the edge channel) or `.../stable/` (`CHANNEL=stable` in `/etc/aos/update.conf`); GitHub redirects the download to `objects.githubusercontent.com`. |
 | Data sent | A plain HTTPS GET: your IP address, the URL (which names the channel) and curl's version string as the user agent. No AOS version, no machine identifier, no account. |
 | Recipient | GitHub, Inc. (Microsoft), under GitHub's privacy statement. AOS runs no server of its own here and sees nothing. |
@@ -42,7 +42,7 @@ report" page quote this page; the two have to match.
 
 | | |
 |---|---|
-| What | Only when a person sends one: "Send a report" in Settings, the first-boot setup's consent page, or `aos-report --send` at a terminal. The archive holds the state of the machine, not the person's files: the AOS version and build, the kernel, the hardware and its drivers (`lspci`, `lsusb`, DMI), this boot's system log and the previous boot's warnings, failed services, start-up times, the programs using the most memory, the desktop's log and which programs crashed (no memory dumps), sound and Bluetooth state with the names of paired devices, disks, mounts, network status (addresses, no Wi-Fi passwords), what Software has installed and its sources. With `--hwcheck`, the hardware check's results (`aos-hwcheck`'s JSON: the DMI model, firmware, each check's pass, fail or skip). With `--steam`, Steam's own logs from the home folder -- the one thing from it, opted into separately. `aos-report --what` prints the same list on the machine. Lines that look like passwords, pre-shared keys, private keys or tokens are blanked before the archive is made; a log can still name files, networks or sites a program wrote about, so a report is personal data. |
+| What | Only when a person sends one: "Send a report" in Settings, the first-boot setup's consent page, or `aos-report --send` at a terminal. The archive holds the state of the machine, not the person's files: the AOS version and build, the kernel, the hardware and its drivers (`lspci`, `lsusb`, DMI), this boot's system log and the previous boot's warnings, failed services, start-up times, the programs using the most memory, the desktop's log and which programs crashed (no memory dumps), sound and Bluetooth state with the names of paired devices, disks, mounts, network status (addresses, no Wi-Fi passwords), what Store has installed and its sources. With `--hwcheck`, the hardware check's results (`aos-hwcheck`'s JSON: the DMI model, firmware, each check's pass, fail or skip). With `--steam`, Steam's own logs from the home folder -- the one thing from it, opted into separately. `aos-report --what` prints the same list on the machine. Lines that look like passwords, pre-shared keys, private keys or tokens are blanked before the archive is made; a log can still name files, networks or sites a program wrote about, so a report is personal data. |
 | Sent with it | The person's note, the AOS version, and an anonymous machine number: the first 16 hex digits of sha256("aos-report:" + the machine id), so one machine's reports group without the machine id itself leaving. |
 | Where | The `REPORT_URL` of the build (`/usr/lib/aos/report.conf`, or `/etc/aos/report.conf`); https only. The public builds carry no URL yet: until a receiver exists, nothing can be sent at all and Settings shows no Send button; it shows "Report a problem", which opens issues.adelon.eu in the browser (nothing is sent by that). |
 | Consent | Each report is the person's own command: `aos-report --send` refuses without `--i-asked`, which Settings' Send, the first-boot toggle and the recovery screen's "Send a report" pass, and so can a person at a terminal. There is no standing consent; `/etc/aos/report-consent` is no longer read. |
@@ -100,7 +100,7 @@ report" page quote this page; the two have to match.
 - **Printers:** cups-browsed and Avahi listen for printers on the local
   network and publish nothing.
 - **Third-party programs** (Firefox, Chrome, Steam, VS Code, Discord
-  and the others from Software) have their own telemetry and their own
+  and the others from Store) have their own telemetry and their own
   settings for it; AOS's sandbox limits what they can read, not what
   they send. What they do is theirs, under their vendors' policies.
 

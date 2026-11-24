@@ -164,6 +164,39 @@ AOS key, can change PCR 7: the next boot may ask for the passphrase
 once (then `aos-tpm` seals it again). tpm-test.py drives both boots in QEMU
 with swtpm (AOS_TPM=1). The cores carry nothing of yours; the ESP only
 the name of the console keymap.
+
+**Lock and Erase from Your devices** (aos-rootd's check-in,
+`aos-rootd --device`, never a D-Bus method). Lock wipes the TPM's
+keyslot (`systemd-cryptenroll --wipe-slot=tpm2`, never the last key)
+and clears the TPM (TPM2_Clear of the owner hierarchy, sent to
+/dev/tpmrm0 with the empty lockout password AOS never sets): every key
+sealed to it before is dead, so even a copy of the header taken before
+the lock does not open with this TPM, and the next start asks for the
+recovery key. While the lock holds, every check-in wipes a TPM key that
+came back and clears again. When the TPM refuses the clear
+(disableClear, a lockout password another system set), only the slot
+is wiped and the journal says that is weaker: a header copy from before
+would still open with this TPM. The clear also drops anything another
+system on another disk sealed to the TPM (BitLocker asks for its
+recovery key). After the recovery key, Settings > About > Disk seals a
+new TPM key. Thirty days without reaching account.adelon.io do the
+same as a Lock: the slot wiped and the TPM cleared, same fallback.
+Erase does the same, then `cryptsetup erase`
+(every keyslot area overwritten, then discarded), labels the header
+`aos-erased`, tries the report twice a minute apart, discards the data
+from the segment offset on and powers off at once; an erase made
+offline is never reported. The volume key is then on no disk and in no
+memory; a header copy taken before is useless without the recovery key
+(the TPM's old keys are gone), and old copies of the keyslot areas that
+flash keeps are useless for the same reason. Where the disk discards,
+the data itself is gone as well; where it cannot, a header copy and the
+recovery key together would still open it. The initramfs says the
+computer was erased, asks for nothing and powers off. The aos partition
+is found by its own PARTUUID (udev's record, never by-partuuid) and
+another disk's encryption (a stick) never stops either; a second one on
+the aos disk does. The homes are homed images inside the aos partition
+and go with its keys. A partition in the clear has nothing to lock and
+is never erased. lockerase-test.py checks this on a throwaway install.
 The swap file
 (`aos/aos/swapfile`) is made by the installer only on an encrypted
 partition: in the clear it would hold pages of the encrypted homes;

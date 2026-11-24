@@ -37,11 +37,11 @@ upstream, and AOS picks up the fix by updating the package.
 ## How a fix reaches you
 
 A new release. An installed machine looks for one two minutes after a
-boot and daily, and Software -> Update (or `apm upgrade`) writes it
+boot and daily, and Store -> Update (or `apm upgrade`) writes it
 into the idle root slot, signed and checked, with the old one a rollback
 away (Settings -> Advanced, or the hidden loader menu) ([br2ext/docs/upgrading.md](upgrading.md)).
 Applications from apm update in the same step. Since 0.3.3 a machine is
-updated, not reinstalled. "Follow the stable channel" in Software waits
+updated, not reinstalled. "Follow the stable channel" in Store waits
 for a release to be promoted after its time on edge.
 
 ## Known limitations

@@ -17,7 +17,7 @@ Every release goes to the **edge** channel as it is published; **stable**
 gets a release promoted from edge after its time there with no fault
 found, without a rebuild (`release.sh --promote stable`). A machine
 follows stable with `CHANNEL=stable` in `/etc/aos/update.conf`, which
-Software's "Follow the stable channel" writes
+Store's "Follow the stable channel" writes
 ([upgrading.md](upgrading.md)).
 
 An installed machine moves to a new release by a base-OS update (below).
@@ -64,7 +64,7 @@ An AOS machine answers nothing it was not asked. The firewall
 (`/etc/nftables.conf`, loaded before the network) drops every inbound
 packet that is not a reply, ICMP, a DHCP answer or SSH, plus the ports an
 installed package declared in its recipe (`[sandbox] ports`,
-`vpn_ports`; apm writes them to `/opt/apm/exports/firewall/`, Software
+`vpn_ports`; apm writes them to `/opt/apm/exports/firewall/`, Store
 shows them on the package's page, Settings -> Network switches them,
 porting.md); sshd itself runs
 only when the person turns remote login on in Settings -> Network (a
@@ -77,7 +77,7 @@ AppArmor or SELinux policy -- a known gap, not a decision
 installed and off until a policy is written for the machine. Updates are looked for
 daily (`aos-update-check.timer`, which refreshes the signed indexes and
 asks whether a new AOS is out) and the desktop says when there are some;
-nothing is installed without the person: `apm upgrade`, Software ->
+nothing is installed without the person: `apm upgrade`, Store ->
 Updates or Settings does that. The CVE report of each release and its
 triage are in [security-status.md](security-status.md).
 
@@ -139,5 +139,5 @@ confirmed `boot-sync` brings the loader files on the ESP up to the
 release's. Accounts,
 `/home`, installed programs and settings live on the aos partition, which
 no update touches; the kernel comes with the core, not from apm. Application updates go through `apm upgrade`; both are on the
-Software application's Update page. A disk installed before 0.2.0
+Store application's Update page. A disk installed before 0.2.0
 is reinstalled once, which erases it.

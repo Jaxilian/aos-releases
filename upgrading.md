@@ -42,7 +42,7 @@ newer kernel may need a newer driver.
 The kernel is part of the core (docs/layout.md): a core is an immutable
 image checked block by block, so nothing can put a kernel or a modules
 directory into it afterwards. A kernel change ships as an OS update --
-`release.sh --publish`, then Software's Upgrade system -- and the
+`release.sh --publish`, then Store's Upgrade system -- and the
 previous kernel is the previous slot. (0.1.x had the kernel as an apm
 package, `kernel-apkg.sh`; that road is closed.)
 
@@ -56,7 +56,7 @@ release `stable` of the same repository, which holds what
 after its time on edge with no fault found, promoted without a rebuild.
 A machine follows it with `CHANNEL=stable` in `/etc/aos/update.conf`
 (a copy of the core's file with that line; the file replaces the
-core's whole), which is what Software's Update page writes when
+core's whole), which is what Store's Update page writes when
 "Follow the stable channel" is switched on, and removes when it is
 switched off. `aos-update --check` names the channel and the URL it
 reads. A channel is the last part of the URL, so a local server for
@@ -99,8 +99,8 @@ with its dm-verity hash tree ([layout.md](layout.md) describes the
 disk). `aos-update` moves a machine to a newer release:
 
 ```sh
-apm upgrade       # every package, then the OS itself: what Software's "Upgrade system" runs (aos-rootd runs it)
-apm --progress upgrade  # the same, with "::pkg", "::dl" and "::os" lines Software reads for its Update page
+apm upgrade       # every package, then the OS itself: what Store's "Upgrade system" runs (aos-rootd runs it)
+apm --progress upgrade  # the same, with "::pkg", "::dl" and "::os" lines Store reads for its Update page
 aos-update --check     # "AOS 0.3.0 is available (this is 0.2.0)", or that it is the newest
 aos-update             # fetch, verify, write the idle slot; boots at the next restart
 aos-update --rollback  # the other slot -- what ran before -- boots at the next restart
@@ -128,7 +128,7 @@ writes the slot again.
 
 One update runs at a time: a second `aos-update` (or an `apm upgrade`
 beside one) says "another update is already running" and leaves, and
-Software's button says "Upgrading..." while one is working. Everything an update
+Store's button says "Upgrading..." while one is working. Everything an update
 printed is kept in `/var/log/aos-update.log`, on the data partition, so
 a failed one can be read afterwards -- from another machine too, since
 that partition is readable with the stick plugged in.
@@ -177,12 +177,12 @@ it writes the fallback to `/var/log/aos-update.log` and to
 `/var/lib/aos/update-fallback`, which `aos-update-notice` (a user unit
 of the session) shows as a notification at the next login, in English
 or Swedish; the file goes two minutes after that login. Nothing tries
-the release again by itself: Software installs it again only when
+the release again by itself: Store installs it again only when
 Upgrade is pressed. The
 hidden boot menu (hold Space) lists the other slot's entry by hand, and
 `--rollback` does the same from the running system.
 Nothing on the data partition -- accounts, `/home`, installed programs,
-settings -- is touched by any of it. Software's Update page runs the same
+settings -- is touched by any of it. Store's Update page runs the same
 command, one button for the packages and the OS, with a line per package
 that says where it is (downloading with a percentage, installing, done,
 failed with the reason) and a Restart button when the OS part is done.

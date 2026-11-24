@@ -19,7 +19,7 @@ from `security/triage.csv`.
 ## What is supported
 
 A stable release receives fixes until the next stable release, plus 30
-days. A machine updates itself (Software, `aos-update-check.timer`), so
+days. A machine updates itself (Store, `aos-update-check.timer`), so
 staying supported means staying on. Hardware is supported as long as
 its line in docs/hardware.md says "certified" or "works".
 

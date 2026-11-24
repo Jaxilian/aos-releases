@@ -172,10 +172,10 @@ its owner exists, and nobody's afterwards.
 root.** Official software comes from AOS's repository, checked against
 the key in the core. Anyone else -- a vendor, a developer releasing to
 themselves -- publishes a repository of their own, signed with their own
-key: Software's "Add a repository" fetches that key from the address,
+key: Store's "Add a repository" fetches that key from the address,
 checks that it signs the index there and pins it, so nothing but that
 key is trusted for it, and an older signed index is refused as a
-replay. Each such repository is a page of its own in Software, labelled
+replay. Each such repository is a page of its own in Store, labelled
 as not part of AOS. Its packages must be prebuilt and carry no system
 service and no install hooks: nothing from it ever runs as root, and
 its programs run in their sandbox like any other. AOS's third-party
@@ -184,7 +184,7 @@ never a dependency of anything official.
 
 **A program starts with the session only if the person lets it.** A
 package may ask to (a VPN client, a sync tool), like it asks for the
-camera; its page in Software shows the switch "Starts when you log in",
+camera; its page in Store shows the switch "Starts when you log in",
 and the person's choice wins. The desktop starts such programs once per
 login through their launchers, so through their sandbox, as a click
 would; removing the program removes that too.
@@ -245,7 +245,7 @@ new window takes the keyboard only when it earned it (ade act.rs).
 XWayland asks for no cookie; it serves its own uid and refuses
 another account's. Removable drives and phones (`/run/media`) are
 inside only with `media = true`, `;media`, `--media` (since round 146;
-every sandbox had them before), and Software's switch "Removable
+every sandbox had them before), and Store's switch "Removable
 drives and phones" sets it per program. Without it, a file on a stick
 picked in the file dialog or opened with the program reaches it
 through the document portal, as a home file outside its view does
@@ -350,7 +350,7 @@ folder that was checked is the folder that is mounted, whatever the
 project does to its name meanwhile.
 
 A program may be given another package's data: `[sandbox] data =
-["google/android-sdk"]` in its manifest (`--data ORG/NAME`; Software's
+["google/android-sdk"]` in its manifest (`--data ORG/NAME`; Store's
 Sees line says "reads and changes the data of ..."). When that package
 is installed, its `~/AppData/<org>.<name>` is bound read-write at its
 own path: Android Studio installs SDK parts, an editor uses the
@@ -385,7 +385,7 @@ entries when they hold no control or direction characters, else the
 ids): Allow (exit 0) writes `allow`, Don't allow or Escape (exit 1)
 writes `deny`, and a closed dialog, two minutes without an answer, no
 display or no ade-portal write nothing and the program starts without
-the folder. Software's Permissions card has a switch per declared
+the folder. Store's Permissions card has a switch per declared
 package that writes the same file. A workspace never asks: it gets the
 packages its program was started with that are still allowed.
 
@@ -526,7 +526,7 @@ sandbox, running as the person, can start `/usr/bin/settings` itself
 so speak as Settings. That is accepted rather than defended: such a
 program can read the login keyring, where the sign-in lives, without
 the service at all. The defence is the sandbox, which every app from
-Software runs in.
+Store runs in.
 
 The login screen's picture asked for by a sandboxed program (Images'
 Set as Login Screen Wallpaper) goes to ade-portal's
@@ -576,7 +576,7 @@ The password window a workspace's git or ssh opens shows the text the
 tool gives it: what runs in a workspace can ask for any password in a
 window that looks like the system's. A program with `data` can change the
 other package's settings and take its sign-in: that is the grant, and
-Software shows it only once the program is installed. Claude sessions held in a workspace are not listed outside it.
+Store shows it only once the program is installed. Claude sessions held in a workspace are not listed outside it.
 
 A workspace can read and replace the assistants' sign-ins
 (`~/.claude/.credentials.json` and its like, above), the one file of

@@ -355,7 +355,7 @@ drivers, neither of which the kernel had.
 
 ## Reinstalling
 
-An installed stick takes new releases by an update (Software -> Update),
+An installed stick takes new releases by an update (Store -> Update),
 keeping its accounts and homes; that is the normal way since 0.3.3.
 Running `--install` on it again is fine when a clean stick is wanted,
 and erases everything on it. The installer scrubs the disk first:

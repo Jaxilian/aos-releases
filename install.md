@@ -154,17 +154,17 @@ undoes it; the loader menu's (hold Space while the machine starts) "AOS
   application.
 - **Svenska**: Settings -> Keyboard -> Language, at the next login. The
   shell and the lock screen stay in English for now.
-- **Software**: Super, then Software -- AOS's own applications under
+- **Store**: Super, then Store -- AOS's own applications under
   Official, and Visual Studio Code, Firefox, Discord and Steam under
   Third-party once you switch that repository on (they are not part of
   AOS, and are marked).
 - **Updates**: AOS looks once a day and says so when there are some.
-  Software -> Update installs every application update and a new AOS in
+  Store -> Update installs every application update and a new AOS in
   one step; a new AOS starts at the next restart. To go back to the one
   before if anything is wrong: hold Space at start for the loader menu
   and pick the older entry, or use the recovery screen's "Go back to the
   previous version of AOS" (it runs `aos-update --rollback`, which needs
-  root). Software -> Updates -> "Follow the stable channel" takes only
+  root). Store -> Updates -> "Follow the stable channel" takes only
   releases that have had their time on the newest one. A machine is updated, never reinstalled.
 - **Encrypting later**: a machine installed without "Encrypt the
   whole disk" is encrypted in place from the live stick, on mains

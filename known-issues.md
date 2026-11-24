@@ -119,10 +119,10 @@ an issue on the project.
 - **Screen sharing** asks which display and shares it whole (no single
   window yet); each frame is read back through the CPU, so it costs
   more than it should.
-- **X11 programs** need XWayland, a third-party package (Software ->
+- **X11 programs** need XWayland, a third-party package (Store ->
   AOS -> Compatibility); Steam installs it.
 
-## Software
+## Store
 
 - **The app store's catalogue is the two indexes**: AOS's own
   applications, and as third-party Firefox, Chrome, Visual Studio Code,
@@ -156,10 +156,10 @@ an issue on the project.
   (none planned: the slots have years of room). Since 0.3.3
   everything else, the loader included, comes with an update.
 - **Every release reaches a machine as it is published** unless
-  Software -> Update -> "Follow the stable channel" is on; the stable
+  Store -> Update -> "Follow the stable channel" is on; the stable
   channel is filled by hand, after a release's time on edge, and is
   empty until the first promotion.
-- **AOS's own applications show as installed in Software but do not
+- **AOS's own applications show as installed in Store but do not
   upgrade one by one**: they are part of the release image, and a new
   version of one comes with the next system update.
 
