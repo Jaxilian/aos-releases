@@ -6,7 +6,7 @@ beside every release, Buildroot's `pkg-stats` against NVD) and what was
 done about each entry. A release is refused until every reported CVE
 has a row (`release.sh`). docs/security-policy.md is the cadence.
 
-349 rows: 160 fixed, 187 not applicable, 2 open.
+350 rows: 161 fixed, 187 not applicable, 2 open.
 
 ## Open
 
@@ -19,6 +19,7 @@ has a row (`release.sh`). docs/security-policy.md is the cadence.
 
 | Package | CVE | In | Advisory | Why it mattered |
 |---|---|---|---|---|
+| ffmpeg | CVE-2026-125206 | 0.4.95 |  | an interlaced frame with alpha and an odd height: encode_slice() and find_slice_quant() pass height / 2 as the field height, rounding the top field down, so for a last macroblock row past that height get_alpha_data() fills the block from the row before its blocks buffer, an out-of-bounds read whose bytes are encoded into the output alpha plane of ProRes 4444 (CONFIG_PRORES_KS_ENCODER 1); only the ffmpeg CLI encoding interlaced video to ProRes with prores_ks; fixed by upstream master commit 9edd06f8, not in 8.1.3, carried as br2ext/patches/ffmpeg/0098 on 8.1.3; NVD has no affected versions for it yet, so pkg-stats does not report it today |
 | ffmpeg | CVE-2026-125103 | 0.4.94 |  | an MPEG-4 ALS stream whose MLZ string code is beyond the next free dictionary code makes ff_mlz_decompression() copy uninitialised heap bytes into the decoded audio (CONFIG_ALS_DECODER 1); a crafted file opened in the sandboxed Videos app or the ffmpeg CLI; fixed by upstream master commit db98784a (PR 25703), not in 8.1.3, carried as br2ext/patches/ffmpeg/0049 on 8.1.3 |
 | ffmpeg | CVE-2026-125104 | 0.4.94 |  | a legacy Monkey's Audio frame (version < 3930) declaring a huge nblocks makes ape_decode_frame() allocate gigabytes, a denial of service (CONFIG_APE_DECODER 1); a crafted file opened in the sandboxed Videos app or the ffmpeg CLI; fixed by upstream master commit 968e9e94 (PR 25703), not in 8.1.3, carried as br2ext/patches/ffmpeg/0050 on 8.1.3 |
 | ffmpeg | CVE-2026-125170 | 0.4.94 |  | a truncated RLE TGA packet makes targa_decode_rle() leave stale heap and uninitialised stack bytes in the decoded frame (CONFIG_TARGA_DECODER 1); a crafted file opened in the sandboxed Videos app or the ffmpeg CLI; fixed by upstream master commit f8f84348 (PR 24597), not in 8.1.3, carried as br2ext/patches/ffmpeg/0051 on 8.1.3 |
