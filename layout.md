@@ -75,15 +75,17 @@ modules and no modprobe.
   compressed, preallocated), not dd: a copy-on-write file is refused by
   swapon. It is extra swap behind zram on an encrypted partition, not a
   place for a hibernation image: there is none (power.md).
-- **Homes** stay LUKS2 images with ext4 inside (`--storage=luks` is
-  given everywhere a home is made: homed's own default on a btrfs
-  /home would be a plain subvolume, in the clear).
+- **Homes** stay LUKS2 images (`--storage=luks` is given everywhere a
+  home is made: homed's own default on a btrfs /home would be a plain
+  subvolume, in the clear), with btrfs inside since 2026-11-26 (see
+  "Homes").
 
 ## Homes
 
 Every account made since 0.3 is a systemd-homed one: its home is a
-LUKS2 image, `/home/<name>.home` under `users/`, ext4 inside, sparse on
-the disk (discard on and off line), unlocked by the account's password
+LUKS2 image, `/home/<name>.home` under `users/`, btrfs inside (ext4 for
+a home made before 2026-11-26), sparse on the disk (discard on and off
+line), unlocked by the account's password
 at login -- pam_systemd_home ahead of pam_unix in greetd's, login's,
 aos-root's (aos-rootd's unlock), the lock screen's and system-auth's stacks, with a pam_unix
 line before it (result ignored) that asks for and caches the typed
@@ -101,7 +103,7 @@ it at the deferred removal. The record is in `/var/lib/systemd/home`,
 not in `/etc/passwd`; the greeter and Settings list accounts through
 the C library (nsswitch: `files systemd`), and aos-update's passwd
 merge never sees them. The owner is made at the first boot by
-`aos-firstboot` (`homectl create --storage=luks --fs-type=ext4`, the
+`aos-firstboot` (`homectl create --storage=luks --fs-type=btrfs`, the
 first free uid from 1000), since homed must be running; the installer
 makes no account at all. A **recovery key** (homed's, eight groups of
 eight letters) is made with the home and shown once by the first-boot
@@ -109,6 +111,36 @@ setup, written nowhere; typed where the password goes, it opens the
 home. A classic account (`aos-install --demo`, `--user` for the
 drivers, a machine installed before 0.3) keeps working through
 pam_unix; its home is a plain directory.
+
+**btrfs inside the home** (2026-11-26, DECISIONS.md). Both places that
+make a home, `aos-firstboot` and aos-rootd's UserAdd (aos-sys
+`users::add`), give homectl the same options:
+
+- `--storage=luks --fs-type=btrfs`: homed runs `mkfs.btrfs` (btrfs-progs,
+  in the image since round 136; the kernel has btrfs built in) on the
+  LUKS mapping and makes the home a subvolume inside it.
+- Mount options: homed's own for btrfs are `compress=zstd:1,noacl,
+  user_subvol_rm_allowed`, then `discard` (from `--luks-discard=yes`),
+  then the record's `--luks-extra-mount-options=noatime,discard=async`.
+  `noatime` becomes the mount flag, as on the aos partition; a bare
+  `discard` is synchronous on btrfs, and the later `discard=async`
+  wins. Compression happens before the encryption, so it saves space
+  the aos partition's own zstd cannot (the image is random bytes to
+  it, and NOCOW).
+- `--luks-discard=yes --luks-offline-discard=yes`: the image stays
+  sparse; homed trims at login and at logout, and the LUKS mapping
+  passes discards.
+- The LUKS key derivation is homed's default, as before.
+- Resizing: btrfs grows and shrinks while the home is open, so homed's
+  shrink-at-logout, grow-at-login and its rebalance of the aos
+  partition's free space between homes work on an active home (an ext4
+  home grows online and shrinks only while closed). Its minimum is
+  256 MB.
+- fsck: homed runs `fsck` at activation, which is btrfs-progs'
+  `fsck.btrfs`, a no-op; btrfs checks its checksums on every read.
+
+A home made before keeps its ext4: the file system type is in its
+record and homed mounts it as before; nothing converts it.
 
 ## Encryption
 

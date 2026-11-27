@@ -123,6 +123,8 @@ Microsoft *third-party* UEFI CA turned off; there shim itself is refused
 and the firmware's "Allow Microsoft 3rd Party UEFI CA" has to be on.
 The G14 test machine is in Setup Mode (no platform key), which means
 Secure Boot cannot be on until its firmware's factory keys are restored.
+Its factory db (`dbDefault`, read 2026-11-26) holds the Microsoft UEFI
+CA 2011 and 2023, so Fedora's shim starts once they are.
 
 ## Updates and machines installed before this
 
@@ -252,7 +254,12 @@ the hash alone): from then on release.sh demands the `.pem`, the
 `.pcrpkey` with that hash and a `.pcrsig` per profile whether or not
 the private key is on the host, so a build from a host without it can
 never ship and leave every sealed disk at its passphrase. Without the
-key the build binds to PCR 7 alone. Made once, on the build host:
+key the build binds to PCR 7 alone. ukify signs through
+`systemd-measure`, which no host package builds: it takes the build
+host's (`/usr/lib/systemd/systemd-measure` on an AOS host), and
+post-image.sh refuses one whose systemd major is not the image's, since
+it would predict another PCR 11 than the stub measures. Made on
+2026-11-26 (fingerprint `92ff4bd5...`), once, on the build host:
 
 ```sh
 cd ~/AppData/aos.release/sb && umask 077
@@ -260,7 +267,9 @@ openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out aos-pcr.key
 openssl pkey -in aos-pcr.key -pubout -out aos-pcr.pem
 ```
 
-(The build's `output3/host/bin/openssl` when the host has none.) A
+(The build's `output3/host/bin/openssl` when the host has none.) The
+two files are backed up with `aos-sb.key`, off the build host: a
+reinstall of the build host loses them with its home. A
 lost key means the next release cannot sign: every TPM key asks for the
 passphrase once and `aos-tpm enroll` binds it to the new key. A leaked
 key lets its holder sign their own UKI's PCR 11, but PCR 7 still needs

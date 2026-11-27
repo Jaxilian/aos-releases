@@ -35,10 +35,14 @@ an issue on the project.
   plain home: it updates and works, and nothing converts the home.
   Reinstall for an encrypted one. Settings → Accounts can make new,
   encrypted accounts on it.
-- **A home is not resized.** homed gives the owner most of the free
-  space of the aos partition, sparse on the disk; what a second account
-  made in Settings gets is the same default. Shrinking or growing one
-  afterwards is homectl's job on a terminal.
+- **A home is not resized from Settings.** homed gives the owner most
+  of the free space of the aos partition, sparse on the disk; what a
+  second account made in Settings gets is the same default. A home made
+  since 2026-11-26 is btrfs inside, so homed itself shrinks and grows it
+  while it is open, sharing the partition's free space between homes;
+  a size of one's own is `homectl resize` on a terminal. An older
+  (ext4) home grows the same way but shrinks only while its account is
+  signed out.
 - **The live session's account, `admin`, has no password**: aos-rootd asks for none, there is no lock screen, and the serial console is root's. It
   exists only on the installer; an installed machine has only the
   account you create, and root logs in nowhere there.
