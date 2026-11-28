@@ -4,14 +4,16 @@ What the Adelon Operating System sends off the machine, to whom, and
 why, written the way the GDPR asks of a Swedish company. The rule
 (policies.md, "No telemetry"): AOS sends nothing about the machine on
 its own but the anonymous crash summary of item 3, which Settings ->
-Privacy turns off. The list below is everything; a release that added to it
+Privacy turns off. An Adelon account is optional; items 7 and 8 happen
+only after the person signs in. The list below is everything; a release that added to it
 without a line here would be a bug.
 
 **Controller:** Adelon AB (to be formed; until then Jax Carls, who owns
 AOS). **Contact:** to be decided -- until then the security address in
 security-policy.md. **Legal basis:** the legitimate interest of keeping
 the system updated and secure (items 1, 2, 5, and item 3's crash
-summary), and your explicit request (item 3's full report, item 4). **Your rights:** access, correction and
+summary), your explicit request (item 3's full report, item 4), and the
+contract of the Adelon account you signed in to (items 7 and 8). **Your rights:** access, correction and
 erasure under the GDPR; for a report, quote the report id Settings
 showed when it was sent.
 
@@ -89,6 +91,27 @@ report" page quote this page; the two have to match.
 | Recipient | Open-Meteo (Switzerland), under its privacy policy at open-meteo.com. |
 | Retention | Theirs. AOS keeps the place in `.config/aos/weather` and the last forecast in `.cache/aos/weather` inside Weather's own folder, `~/AppData/aos.weather` (`aos-sandbox` moves them there from `~/.config` and `~/.cache` at the first sandboxed start); removing the first file ends the fetching. |
 
+## 7. The Adelon account (only once you sign in)
+
+| | |
+|---|---|
+| What | Nothing until a person signs in, in Settings -> Users or on Setup's Adelon page after the first start (Skip leaves it). Signing in opens `account.adelon.io` in the browser (OAuth 2 with PKCE; Setup, which has no browser, shows a code to type on another device). Each part has its own sign-in, made only when the person presses Connect: Mail, Calendar, Contacts, Drive and Store. Then: Mail and Calendar and Contacts read and write the person's mail, events and contacts; Drive and home sync upload and download the files the person chose; Store shows the plan, the library and receipts, and buying opens `store.adelon.io` in the browser, where the payment is made (card details never reach AOS). An app from another maker reaches the account only if its manifest asks for a part and the person allows it once ("Let X use your Adelon account?"); Settings -> Users lists each app with a switch per part. |
+| Where | `https://account.adelon.io` (sign-in, plan, Store, Your devices), `https://mail.adelon.io` (mail, calendars, contacts), `https://drive.adelon.io` (Drive and home sync), `https://store.adelon.io` (the payment window, in the browser). |
+| Data sent | What each part needs, tied to the account: the access token, and the mail, events, contacts and files themselves. Drive files and home sync are encrypted on the machine before they leave, names included: the server sees the tree's shape, item counts, sizes and times, never names or content. Mail passes through Adelon's mail server as with any mail service; how it is stored there is in the Adelon privacy policy. |
+| Kept on the machine | Each part's refresh token, and the unlocked mail key, in the login keyring. Signing out in Settings -> Users removes them. |
+| Recipient | Adelon, under the Adelon privacy policy at <https://adelon.io/privacy>, which lists what the account service keeps and for how long. |
+| Retention | As that policy says; deleting the account deletes it. |
+
+## 8. Your devices (only once you save this computer to it)
+
+| | |
+|---|---|
+| What | When the person saves the computer to Your devices (Setup, or Settings -> Users), its record is written to the account: and every 15 minutes after (`aos-device.timer`, enabled on every install, doing nothing without a saved record) aos-rootd asks whether the person locked or erased it from the account page. A lock signs out of Adelon and turns off the TPM's disk unlock; an erase destroys the disk's keys and reports that it did. A saved computer that has not reached its record for 30 days turns off the TPM's disk unlock by itself. |
+| Where | `https://account.adelon.io/devices`. |
+| Data sent | When saving: the name the person gave, the computer's model, the AOS version, whether the disk is encrypted, and the recovery keys of the disk and the home sealed with the account's own key, so the server cannot read them. Every check-in: the record's id and its secret. The server notes when it was last seen. |
+| Recipient | Adelon, as in item 7. |
+| Retention | Until the person forgets the computer on the account page, or the account is deleted. |
+
 ## Also on the network, sending nothing about you
 
 - **Name resolution:** every program's DNS queries go to the network's
@@ -106,7 +129,8 @@ report" page quote this page; the two have to match.
 
 ## What does not exist
 
-No account, no activation, no crash reports sent by themselves, no
-usage statistics, no advertising identifier. A verity-protected core
+No account required, no activation, no usage statistics, no
+advertising identifier, and nothing sent by itself but the anonymous
+crash summary of item 3, and items 7 and 8 once a person signs in. A verity-protected core
 cannot be changed on the machine to add any; a release that did would
 be visible in this page's history and in `policies.md`.

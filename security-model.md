@@ -199,8 +199,13 @@ those flags: bubblewrap, unprivileged, the OS read-only, the package and
 what it depends on, the session's sockets, and a home of its own,
 `~/AppData/<org>.<name>` (visible in Files; deleting it resets the
 program), that holds nothing of the real home but what it was given.
-There is no whole-home mode any more (2026-10-23): `home = "full"`, which
-installed manifests still say, runs as private with a warning. The
+There is no general whole-home mode (2026-10-23): `home = "full"`, which
+installed manifests still say, runs as private with a warning. The one
+exception is `home = "all"` (2026-11-27), declared by Notepad and Code
+only: aos-sandbox binds the real home read-write (`--bind $HOME $HOME`),
+with ~/.ssh, ~/.gnupg, ~/.config/aos and ~/.local/share/keyrings masked
+by an empty tmpfs, and honours it only when the package declared it
+(the person's override can lower it to private, never raise it). The
 store's package page shows "Sees: its own files and Downloads" before
 Install, and once installed the page's Permissions section shows what it
 may see and lets the person change it. A program gets no camera and no

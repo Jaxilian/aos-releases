@@ -107,11 +107,13 @@ A stock laptop, Secure Boot on, the AOS stick in:
 
 That is the whole cost, once per machine; install.md should show the
 six screens (the screendumps of secureboot-test.py enroll). A machine
-installed with Secure Boot off gets the key queued by the installer
-instead: `/usr/lib/aos/sb-enroll` runs `mokutil --import` with an
-eight-digit one-time password and prints it (the installer window's
-Done page shows it, since 0.3.22: before, it went by in a log nobody
-saw); at the next start
+installed with Secure Boot off is asked on Ready to install: "Enroll
+now" or "Enroll later in Settings" (DECISIONS 2026-11-26; aos-install
+no longer queues the key by itself). Now, Setup calls aos-rootd's
+SecureBootEnroll after the install; later, Settings' Disk encryption
+section does, under Secure Boot. Either way `/usr/lib/aos/sb-enroll`
+runs `mokutil --import` with an eight-digit one-time password and
+prints it, the page shows it, and at the next start
 MokManager asks "Enroll MOK", Continue, Yes, the password, Reboot.
 Afterwards Secure Boot can be turned on at any time. The same command
 by hand (`/usr/lib/aos/sb-enroll` as root, on a development build) on a machine updated from an

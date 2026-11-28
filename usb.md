@@ -160,15 +160,13 @@ asks for the owner (see "Accounts" below).
                                                    the ~850 MB core, then read back through its verity
   >>> Mounting
   >>> The aos partition: var, the store, the homes
-  >>> Creating swap file
-      3924 MiB at aos/swapfile                     2-3 minutes, no progress shown
   >>> Installing bootloader                       shim, systemd-boot and loader.conf on the ESP (UEFI only)
   >>> Writing slot a's entry to the ESP           the slot's signed unified kernel image
   >>> Unmounting
   AOS installed on /dev/vda. Remove the install media and reboot.
   ```
   With an account there is a `>>> Account:` line before the bootloader.
-  The swap step is silent and slow. It has not hung. Kernel lines like
+  Kernel lines like
   `clocksource: Watchdog remote CPU 1 read timed out` are QEMU noise.
 
 - A `>>> note:` line after the bootloader about Microsoft's 2011 or 2023

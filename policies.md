@@ -119,8 +119,8 @@ TPM, its state wiped, the disk in another machine) or when there is no
 TPM at all. `aos-tpm` adds or removes the TPM key later (Settings ->
 About does the same), and `aos-encrypt` from the live medium encrypts an
 install made in the clear, in place. The escrow of the recovery key
-waits for a management server. The swap file exists only on the aos
-partition. The cores
+waits for a management server. There is no swap on disk; zram is the
+only swap. The cores
 stay in the clear: they are the public release images, and verity
 covers their integrity ([layout.md](layout.md)).
 

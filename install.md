@@ -86,8 +86,13 @@ says how).
 
 ## 4. Install
 
-Press the Super key (the one with the Windows logo) and pick **Install
-AOS**:
+The stick starts into Setup, full screen; **Try AOS without installing**
+on Welcome ends it into the live desktop, whose **Install AOS** (the
+Super key) opens Setup again in a window. Setup asks the language, then
+Welcome, the computer's name, Wi-Fi only without a network, and **Create
+your account**: your name, your password twice, and the user name made
+from your first name (**Change** to pick another). Then the steps below,
+as Ready to install sums them up:
 
 1. **Licence**: the agreement (`/usr/share/aos/EULA.md`); I agree.
 2. **Keyboard**: your layout, for the desktop and the console.
@@ -105,21 +110,27 @@ AOS**:
    turned on it asks for a passphrase that every start asks for,
    before the desktop. Then a progress bar, then
    **Restart**. Remove the stick when the machine turns off. If Secure
-   Boot was off, the Done page also shows an eight-digit password: the
-   next start's blue screen asks for it (Enroll MOK, Continue, Yes, the
-   password, Reboot), so that Secure Boot can be turned on later. A missed screen is harmless.
+   Boot was off, Ready to install asks whether to enroll the AOS key
+   now or later in Settings; now, the recovery key's page also shows an
+   eight-digit password: the next start's blue screen asks for it
+   (Enroll MOK, Continue, Yes, the password, Reboot), so that Secure
+   Boot can be turned on later. A missed screen is harmless.
 
-The installed machine has no account yet. Its **first boot** asks the
-keyboard and the zone again, then your user name and password: that
-account owns the machine and is its administrator, root has no password
-and logs in nowhere, and your home is encrypted with your password (opened
-at every login, locked when you log out). It then shows a **recovery
-key** once: write it down and keep it away from the computer. If you
-forget your password, the key typed in its place opens your files;
-without either they are gone, by design. A last page asks whether the
-machine may send diagnostics reports: off unless you say yes
-([privacy.md](privacy.md) says what one holds). **Continue** brings the
-login screen.
+Your account is made on the stick, in the install: it owns the machine
+and is its administrator, root has no password and logs in nowhere, and
+your home is encrypted with your password (opened at every login, locked
+when you log out). The last page shows **one recovery key**, once, in
+eight dashed groups: write it down and keep it away from the computer.
+If you forget your password, the key typed in its place opens your
+files; on an encrypted disk the same key also opens the disk, should the
+start ever ask (type it with or without the dashes there). Without
+either your files are gone, by design. The first start asks nothing: it
+is the login screen, with your name on it.
+
+A machine installed for someone else (`usb.sh --oobe`, `aos-install
+--oobe`) has no account yet: its **first boot** asks the keyboard and
+the zone, then a user name and password, shows that home's recovery key
+and asks about diagnostics reports ([privacy.md](privacy.md)).
 
 The demo account of the live medium is never installed.
 

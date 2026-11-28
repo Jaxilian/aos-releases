@@ -26,7 +26,7 @@ longer an apm package: a kernel update is an OS update.
 ```
 aos/
   aos/        what the OS writes: etc/ (the overlay over the core's /etc)
-              and var/ (the whole /var), and the swap file
+              and var/ (the whole /var)
   apm/        the package store: /opt/apm
   users/      the homes: /home
 ```
@@ -50,31 +50,28 @@ mounts either, ext4 exactly as before (`e2fsck -p`, `mount -t ext4`). btrfs is b
 modules and no modprobe.
 
 - **Subvolumes**: `apm` and `users` are subvolumes of the top level;
-  `aos/` (etc, var, the swap file) stays a plain directory in it. The
+  `aos/` (etc, var) stays a plain directory in it. The
   paths are the ones ext4 had, so the mounts and binds are unchanged
   and nothing names a subvolume (no `subvol=`). A directory cannot
   become a subvolume later without a copy, and a subvolume is what a
   snapshot takes: the store (a package update to roll back) and the
-  homes (a backup) are the two worth one. Nothing snapshots yet. The
-  swap file is kept out of both, since btrfs refuses to snapshot a
-  subvolume holding an active swap file.
+  homes (a backup) are the two worth one. Nothing snapshots yet.
 - **Mount options** (the initramfs and the installer): `noatime`, so a
   read writes no metadata (copy-on-write makes every atime update a
   new metadata block, and snapshots would pin the old ones);
   `compress=zstd:1`, the cheapest zstd level, for the store and /var,
   which compress to about half and are read far more than written;
   btrfs skips data that does not compress, and the homes' LUKS images
-  are random bytes and NOCOW anyway (homed sets it), as is the swap
-  file. No `discard=async` on the line: the kernel turns it on by
+  are random bytes and NOCOW anyway (homed sets it). No `discard=async` on the line: the kernel turns it on by
   itself for a device that can discard (6.2 and later); behind LUKS
   the mapping passes no discards, as with ext4.
 - **No fsck at boot**: btrfs checks its own checksums on every read and
   replays its log at mount; `btrfs check` is a repair tool, not a boot
   step.
-- **The swap file** is `btrfs filesystem mkswapfile` (NOCOW, not
-  compressed, preallocated), not dd: a copy-on-write file is refused by
-  swapon. It is extra swap behind zram on an encrypted partition, not a
-  place for a hibernation image: there is none (power.md).
+- **No swap file** (since 2026-11-26, DECISIONS.md): zram is the only
+  swap. Installs up to 0.4.95 made `aos/aos/swapfile` (8 GiB at most,
+  priority 10) on an encrypted partition; `migrate.d/0006-no-swapfile.sh`
+  removes it and its fstab line (performance.md, "Memory pressure").
 - **Homes** stay LUKS2 images (`--storage=luks` is given everywhere a
   home is made: homed's own default on a btrfs /home would be a plain
   subvolume, in the clear), with btrfs inside since 2026-11-26 (see
@@ -141,6 +138,28 @@ make a home, `aos-firstboot` and aos-rootd's UserAdd (aos-sys
 
 A home made before keeps its ext4: the file system type is in its
 record and homed mounts it as before; nothing converts it.
+
+From the stick (`aos-install --owner NAME --password-fd N`, Setup's
+Create your account) the owner is made in the install, by the live
+medium's homed: its key pair is made anew, `homectl create
+--identity=-` (the password hashed by `/usr/lib/aos/owner-identity`,
+yescrypt through libcrypt, and handed over on a pipe) writes the
+LUKS2 image with btrfs inside straight to the new disk's `users/`,
+uid 1001 and up (the live `admin` holds 1000), and the record and the
+key pair go to the new system's `/var/lib/systemd/home`, the record's
+binding moved to its machine id. That homed then finds the home signed
+by its own key: password changes, resizing and the recovery key work
+as for a home it made. The live homed forgets both before the install
+ends. On an encrypted aos partition the home's recovery key becomes the
+disk's too: added twice, as homed prints it and without its dashes, and
+the install key removed when the TPM holds the disk; the first start
+is the login screen. One install runs at a time (`flock
+/run/aos-install.lock`, and aos-rootd's own state); the key goes to
+Setup through a 0600 file of aos-rootd's, written as soon as the home
+exists, which InstallKey hands over (after a failure too) until Setup's
+"I've written it down" calls InstallKeyDone, so a Setup that died
+meanwhile finds it when it starts again. A
+failed install leaves the live homed as it was.
 
 ## Encryption
 
@@ -229,10 +248,9 @@ another disk's encryption (a stick) never stops either; a second one on
 the aos disk does. The homes are homed images inside the aos partition
 and go with its keys. A partition in the clear has nothing to lock and
 is never erased. lockerase-test.py checks this on a throwaway install.
-The swap file
-(`aos/aos/swapfile`) is made by the installer only on an encrypted
-partition: in the clear it would hold pages of the encrypted homes;
-zram is the swap otherwise. There is no hibernation (power.md).
+There is no swap on disk, so no page of an encrypted home is ever
+written there in the clear: zram, in memory, is the only swap, and
+there is no hibernation (power.md).
 
 ## The greeter
 
@@ -245,7 +263,11 @@ takes a password and asks greetd over its socket to start
 before, with the apm environment, started again after a crash up to
 four times in two minutes. The lock screen later in the session is
 ade-lock, as it was. The live medium and a demo install keep
-ade.service's autologin; `/etc/greetd/config.toml` in the /etc overlay
+ade.service's autologin; on the live medium the unit's start
+(`/usr/lib/aos/setup-session`) makes that session Setup alone, as a
+kiosk, until Setup's "Try AOS without installing" leaves `setup-try` in
+the unit's runtime directory and ends the compositor, which the unit
+starts again as the live desktop; `/etc/greetd/config.toml` in the /etc overlay
 and the unit's enablement are what aos-install writes for the others,
 and aos-firstboot rewrites after the first boot. greetd's PAM service
 (`/etc/pam.d/greetd`) is the console's with pam_systemd, so both the
@@ -268,6 +290,37 @@ With Secure Boot on every arrow but the last two is a signature check
 (docs/secure-boot.md). The loader shows no menu: holding Space while
 the machine starts lists the entries (the UKI's profiles -- the serial
 console, safe graphics, no kiosk -- and the other slot).
+
+**The splash.** Every UKI carries the Adelon mark, white on black, in
+its `.splash` section (`board/aos/brand/splash.bmp`, post-image.sh's
+`ukify --splash`): systemd-stub draws it centred as it starts the
+kernel. The normal entries boot quietly (`quiet loglevel=3
+systemd.show_status=auto`) and the kernel's console takes the screen
+only when something is written to it
+(`CONFIG_FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER`), so the mark stays
+until the compositor draws the login screen: 8 s of mark in QEMU,
+2026-11-22, where it was 0.3 s before simpledrm's console cleared it.
+Text takes the screen when there is something to say: the passphrase
+prompt of an encrypted disk, an emergency shell, a failed unit, the
+initramfs's failure (which raises the console's loglevel first). The
+"safe graphics" entry is verbose as before, the serial entry
+unchanged, and the journal holds everything.
+The section is measured into PCR 11 and covered by the signed policy
+like the rest. The BMP is rendered once from
+`brand/adelon-mark-light.svg` and committed, since the firmware scales
+nothing and the build has no PNG-to-BMP step:
+
+```sh
+output3/host/bin/rsvg-convert -w 256 -h 256 -b black \
+    br2ext/board/aos/brand/adelon-mark-light.svg -o mark.png
+python3 -c "from PIL import Image; \
+    Image.open('mark.png').convert('L').save('splash.bmp')"
+```
+
+256 pixels, 8-bit grey, 66 KB. `brand/adelon-mark.svg` is the same mark
+without a fill (black), for light backgrounds; Settings carries its own
+copy (aos-apps `apps/settings/res/mark.svg`) and tints it with the
+theme's text colour.
 
 **Which slot boots** is the file name (systemd-boot's boot counting,
 `slot.sh`): `aos-0.3.30-b+3.efi` is a slot an update staged, with three
